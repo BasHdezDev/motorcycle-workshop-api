@@ -10,7 +10,7 @@ import { DriverModule } from './driver/driver.module';
     isGlobal: true,
   }),
     PrismaModule,
-    DriverModule
+    DriverModule,
   ],
   controllers: [AppController],
   providers: [AppService],
