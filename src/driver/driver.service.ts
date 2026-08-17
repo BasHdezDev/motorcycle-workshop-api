@@ -47,7 +47,19 @@ export class DriverService {
   }
 
   async remove(id: string) {
-    await this.findOne(id);
+    const driver = await this.prisma.driver.findUnique({
+      where: { id },
+      include: { _count: { select: { motorcycles: true } } },
+    });
+
+    if (!driver) throw new NotFoundException(`Driver ${id} not found`);
+
+    if (driver._count.motorcycles > 0) {
+      throw new ConflictException(
+        `Cannot delete driver with ${driver._count.motorcycles} registered motorcycle(s)`,
+      );
+    }
+
     return this.prisma.driver.delete({ where: { id } });
   }
 
