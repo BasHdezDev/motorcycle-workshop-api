@@ -1,4 +1,11 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
-@Controller('driver')
-export class DriverController {}
+@Controller('drivers')
+export class DriverController {
+    @Get()
+    findAll() {
+        return {
+            message: 'Drivers endpoint',
+        };
+    }
+}
