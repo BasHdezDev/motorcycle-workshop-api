@@ -8,6 +8,8 @@ services:
       - '3000:3000'
     env_file:
       - .env
+    environment:
+      DATABASE_URL: postgresql://workshop_user:workshop_password@postgres:5432/motorcycle_workshop
     depends_on:
       postgres:
         condition: service_healthy
