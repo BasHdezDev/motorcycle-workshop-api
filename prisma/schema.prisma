@@ -1,0 +1,75 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ServiceOrderStatus {
+  RECEIVED
+  UNDER_DIAGNOSIS
+  UNDER_REPAIR
+  READY
+  DELIVERED
+  CANCELLED
+}
+
+model Driver {
+  id             String  @id @default(uuid()) @db.Uuid
+  firstName      String
+  lastName       String
+  documentNumber String  @unique
+  phone          String
+  email          String? @unique
+
+  motorcycles Motorcycle[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Motorcycle {
+  id                 String @id @default(uuid()) @db.Uuid
+  licensePlate       String @unique
+  brand              String
+  model              String
+  year               Int
+  engineDisplacement Int
+  color              String
+  chassisNumber      String @unique
+  engineNumber       String @unique
+  driverId           String @db.Uuid
+
+  driver        Driver         @relation(fields: [driverId], references: [id])
+  serviceOrders ServiceOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ServiceOrder {
+  id                 String             @id @default(uuid()) @db.Uuid
+  orderNumber        String             @unique
+  motorcycleId       String             @db.Uuid
+  checkInDate        DateTime
+  checkOutDate       DateTime?
+  problemDescription String
+  diagnosis          String?
+  workPerformed      String?
+  status             ServiceOrderStatus @default(RECEIVED)
+  repairCost         Decimal?           @db.Decimal(10, 2)
+  paymentCompleted   Boolean            @default(false)
+  paymentDate        DateTime?
+
+  motorcycle Motorcycle @relation(fields: [motorcycleId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
