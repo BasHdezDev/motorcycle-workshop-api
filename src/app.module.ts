@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { DriverModule } from './driver/driver.module';
+import { MotorcycleModule } from './motorcycle/motorcycle.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -11,6 +12,7 @@ import { DriverModule } from './driver/driver.module';
   }),
     PrismaModule,
     DriverModule,
+    MotorcycleModule,
   ],
   controllers: [AppController],
   providers: [AppService],
