@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMotorcycleDto } from './dto/create-motorcycle.dto/create-motorcycle.dto';
-import { Prisma } from 'generated/prisma/client';
+import { Prisma } from '../../generated/prisma/client.js';
 import { UpdateMotorcycleDto } from './dto/update-motorcycle.dto/update-motorcycle.dto';
 import { QueryMotorcycleDto } from './dto/query-motorcycle.dto/query-motorcycle.dto';
 
