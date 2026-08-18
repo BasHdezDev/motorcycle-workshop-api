@@ -4,6 +4,7 @@ import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-ser
 import { Prisma, ServiceOrderStatus } from '../../generated/prisma/client.js';
 import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto';
 import { ChangeStatusDto } from './dto/change-status.dto/change-status.dto';
+import { QueryServiceOrderDto } from './dto/query-service-order.dto/query-service-order.dto';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -137,6 +138,19 @@ export class ServiceOrderService {
             where: { id },
             data: { status: 'CANCELLED' },
         });
+    }
+
+    search(filters: QueryServiceOrderDto) {
+        const where: Prisma.ServiceOrderWhereInput = {};
+
+        if (filters.motorcycleId) {
+            where.motorcycleId = filters.motorcycleId;
+        }
+        if (filters.status) {
+            where.status = filters.status;
+        }
+
+        return this.prisma.serviceOrder.findMany({ where });
     }
 
 }
