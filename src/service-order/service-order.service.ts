@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
 import { Prisma, ServiceOrderStatus } from '../../generated/prisma/client.js';
 import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto';
+import { ChangeStatusDto } from './dto/change-status.dto/change-status.dto';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -12,6 +13,15 @@ const ACTIVE_STATUSES: ServiceOrderStatus[] = [
     'UNDER_REPAIR',
     'READY',
 ];
+
+const ALLOWED_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
+    RECEIVED: ['UNDER_DIAGNOSIS'],
+    UNDER_DIAGNOSIS: ['UNDER_REPAIR'],
+    UNDER_REPAIR: ['READY'],
+    READY: ['DELIVERED'],
+    DELIVERED: [],
+    CANCELLED: [],
+};
 
 @Injectable()
 export class ServiceOrderService {
@@ -69,4 +79,38 @@ export class ServiceOrderService {
         await this.findOne(id);
         return this.prisma.serviceOrder.update({ where: { id }, data: dto });
     }
+
+    async changeStatus(id: string, dto: ChangeStatusDto) {
+        const order = await this.findOne(id);
+        const { status: nextStatus } = dto;
+
+        const allowedNext = ALLOWED_TRANSITIONS[order.status];
+        if (!allowedNext.includes(nextStatus)) {
+            throw new BadRequestException(
+                `Cannot transition from ${order.status} to ${nextStatus}`,
+            );
+        }
+
+        if (nextStatus === 'DELIVERED') {
+            if (order.repairCost === null) {
+                throw new BadRequestException(
+                    'Cannot mark as DELIVERED: repairCost has not been set',
+                );
+            }
+            if (!order.paymentCompleted) {
+                throw new BadRequestException(
+                    'Cannot mark as DELIVERED: payment has not been completed',
+                );
+            }
+        }
+
+        return this.prisma.serviceOrder.update({
+            where: { id },
+            data: {
+                status: nextStatus,
+                ...(nextStatus === 'DELIVERED' ? { checkOutDate: new Date() } : {}),
+            },
+        });
+    }
+
 }
