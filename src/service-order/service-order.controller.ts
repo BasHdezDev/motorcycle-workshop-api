@@ -32,4 +32,9 @@ export class ServiceOrderController {
     changeStatus(@Param('id') id: string, @Body() dto: ChangeStatusDto) {
         return this.serviceOrderService.changeStatus(id, dto);
     }
+
+    @Patch(':id/cancel')
+    cancel(@Param('id') id: string) {
+        return this.serviceOrderService.cancel(id);
+    }
 }

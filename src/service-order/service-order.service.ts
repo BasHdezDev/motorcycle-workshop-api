@@ -113,4 +113,23 @@ export class ServiceOrderService {
         });
     }
 
+    async cancel(id: string) {
+        const order = await this.findOne(id);
+
+        const cancellableStatuses: ServiceOrderStatus[] = [
+            'RECEIVED',
+            'UNDER_DIAGNOSIS',
+        ];
+        if (!cancellableStatuses.includes(order.status)) {
+            throw new BadRequestException(
+                `Cannot cancel an order in status ${order.status}. Only RECEIVED or UNDER_DIAGNOSIS orders can be cancelled.`,
+            );
+        }
+
+        return this.prisma.serviceOrder.update({
+            where: { id },
+            data: { status: 'CANCELLED' },
+        });
+    }
+
 }
