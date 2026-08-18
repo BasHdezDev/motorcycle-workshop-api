@@ -2,6 +2,7 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
 import { Prisma, ServiceOrderStatus } from '../../generated/prisma/client.js';
+import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -62,5 +63,10 @@ export class ServiceOrderService {
             throw new NotFoundException(`ServiceOrder ${id} not found`);
         }
         return serviceOrder;
+    }
+
+    async update(id: string, dto: UpdateServiceOrderDto) {
+        await this.findOne(id);
+        return this.prisma.serviceOrder.update({ where: { id }, data: dto });
     }
 }

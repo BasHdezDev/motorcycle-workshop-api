@@ -1,23 +1,29 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Patch } from '@nestjs/common';
 import { ServiceOrderService } from './service-order.service.js';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
+import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto.js';
 
 @Controller('service-orders')
 export class ServiceOrderController {
-  constructor(private readonly serviceOrderService: ServiceOrderService) {}
+    constructor(private readonly serviceOrderService: ServiceOrderService) { }
 
-  @Post()
-  create(@Body() dto: CreateServiceOrderDto) {
-    return this.serviceOrderService.create(dto);
-  }
+    @Post()
+    create(@Body() dto: CreateServiceOrderDto) {
+        return this.serviceOrderService.create(dto);
+    }
 
-  @Get()
-  findAll() {
-    return this.serviceOrderService.findAll();
-  }
+    @Get()
+    findAll() {
+        return this.serviceOrderService.findAll();
+    }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.serviceOrderService.findOne(id);
-  }
+    @Get(':id')
+    findOne(@Param('id') id: string) {
+        return this.serviceOrderService.findOne(id);
+    }
+
+    @Patch(':id')
+    update(@Param('id') id: string, @Body() dto: UpdateServiceOrderDto) {
+        return this.serviceOrderService.update(id, dto);
+    }
 }
