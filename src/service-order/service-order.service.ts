@@ -76,7 +76,14 @@ export class ServiceOrderService {
     }
 
     async update(id: string, dto: UpdateServiceOrderDto) {
-        await this.findOne(id);
+        const order = await this.findOne(id);
+
+        if (order.status === 'DELIVERED' || order.status === 'CANCELLED') {
+            throw new BadRequestException(
+                `Cannot update an order in a terminal state (${order.status})`,
+            );
+        }
+
         return this.prisma.serviceOrder.update({ where: { id }, data: dto });
     }
 
