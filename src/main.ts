@@ -49,7 +49,14 @@ function registerQueryRoutes(app: NestFastifyApplication) {
     method: 'QUERY',
     url: '/drivers',
     handler: async (request, reply) => {
-      const dto = await validateBody(QueryDriverDto, request.body);
+      const { dto, errors } = await validateBody(QueryDriverDto, request.body);
+      if (errors.length > 0) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: errors,
+        })
+      }
       reply.send(await driverService.search(dto));
     },
   });
@@ -58,7 +65,14 @@ function registerQueryRoutes(app: NestFastifyApplication) {
     method: 'QUERY',
     url: '/motorcycles',
     handler: async (request, reply) => {
-      const dto = await validateBody(QueryMotorcycleDto, request.body);
+      const { dto, errors } = await validateBody(QueryMotorcycleDto, request.body);
+      if (errors.length > 0) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: errors,
+        })
+      }
       reply.send(await motorcycleService.search(dto));
     },
   });
@@ -67,7 +81,14 @@ function registerQueryRoutes(app: NestFastifyApplication) {
     method: 'QUERY',
     url: '/service-orders',
     handler: async (request, reply) => {
-      const dto = await validateBody(QueryServiceOrderDto, request.body);
+      const { dto, errors } = await validateBody(QueryServiceOrderDto, request.body);
+      if (errors.length > 0) {
+        return reply.status(400).send({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: errors,
+        })
+      }
       reply.send(await serviceOrderService.search(dto));
     },
   });
@@ -76,19 +97,16 @@ function registerQueryRoutes(app: NestFastifyApplication) {
 async function validateBody<T extends object>(
   dtoClass: new () => T,
   body: unknown,
-): Promise<T> {
+): Promise<{ dto: T; errors: string[] }> {
   const dto = plainToInstance(dtoClass, body ?? {});
-  const errors = await validate(dto, {
+  const validationErrors = await validate(dto, {
     whitelist: true,
     forbidNonWhitelisted: true,
   });
-  if (errors.length > 0) {
-    const messages = errors
-      .flatMap((e) => Object.values(e.constraints ?? {}))
-      .join(', ');
-    throw new Error(messages); // caught by Fastify's default error handler → 400/500
-  }
-  return dto;
+  const errors = validationErrors.flatMap((e) =>
+    Object.values(e.constraints ?? {}),
+  );
+  return { dto, errors };
 }
 
 bootstrap();
