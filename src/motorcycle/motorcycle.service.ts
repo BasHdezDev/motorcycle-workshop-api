@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateMotorcycleDto } from './dto/create-motorcycle.dto/create-motorcycle.dto';
 import { Prisma } from 'generated/prisma/client';
 import { UpdateMotorcycleDto } from './dto/update-motorcycle.dto/update-motorcycle.dto';
+import { QueryMotorcycleDto } from './dto/query-motorcycle.dto/query-motorcycle.dto';
 
 @Injectable()
 export class MotorcycleService {
@@ -80,5 +81,27 @@ export class MotorcycleService {
         }
 
         return this.prisma.motorcycle.delete({ where: { id } });
+    }
+
+    search(filters: QueryMotorcycleDto) {
+        const where: Prisma.MotorcycleWhereInput = {};
+
+        if (filters.licensePlate) {
+            where.licensePlate = { contains: filters.licensePlate, mode: 'insensitive' };
+        }
+        if (filters.brand) {
+            where.brand = { contains: filters.brand, mode: 'insensitive' };
+        }
+        if (filters.model) {
+            where.model = { contains: filters.model, mode: 'insensitive' };
+        }
+        if (filters.year) {
+            where.year = filters.year;
+        }
+        if (filters.driverId) {
+            where.driverId = filters.driverId;
+        }
+
+        return this.prisma.motorcycle.findMany({ where });
     }
 }
