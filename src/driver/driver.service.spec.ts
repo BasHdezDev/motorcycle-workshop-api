@@ -88,6 +88,31 @@ describe('DriverService', () => {
     });
   });
 
+  describe('search', () => {
+    it('should build a case-insensitive filter for provided fields', async () => {
+      const expected = [{ id: 'uuid-1', firstName: 'Juan' }];
+      mockPrismaService.driver.findMany.mockResolvedValue(expected);
+
+      const result = await service.search({ firstName: 'juan', email: 'TEST.COM' });
+
+      expect(result).toEqual(expected);
+      expect(mockPrismaService.driver.findMany).toHaveBeenCalledWith({
+        where: {
+          firstName: { contains: 'juan', mode: 'insensitive' },
+          email: { contains: 'TEST.COM', mode: 'insensitive' },
+        },
+      });
+    });
+
+    it('should search with an empty filter when no fields are provided', async () => {
+      mockPrismaService.driver.findMany.mockResolvedValue([]);
+
+      await service.search({});
+
+      expect(mockPrismaService.driver.findMany).toHaveBeenCalledWith({ where: {} });
+    });
+  });
+
   describe('findOne', () => {
     it('should return a driver when found', async () => {
       const expected = { id: 'uuid-1', firstName: 'Juan' };
