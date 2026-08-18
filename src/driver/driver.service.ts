@@ -4,6 +4,7 @@ import { CreateDriverDto } from './dto/create-driver.dto/create-driver.dto';
 import { Prisma } from '../../generated/prisma/client.js';
 import { NotFoundException } from '@nestjs/common';
 import { UpdateDriverDto } from './dto/update-driver.dto/update-driver.dto';
+import { QueryDriverDto } from './dto/query-driver.dto/query-driver.dto';
 
 @Injectable()
 export class DriverService {
@@ -65,5 +66,27 @@ export class DriverService {
 
   findAll() {
     return this.prisma.driver.findMany();
+  }
+
+  search(filters: QueryDriverDto) {
+    const where: Prisma.DriverWhereInput = {};
+
+    if (filters.firstName) {
+      where.firstName = { contains: filters.firstName, mode: 'insensitive' };
+    }
+    if (filters.lastName) {
+      where.lastName = { contains: filters.lastName, mode: 'insensitive' };
+    }
+    if (filters.documentNumber) {
+      where.documentNumber = { contains: filters.documentNumber };
+    }
+    if (filters.phone) {
+      where.phone = { contains: filters.phone };
+    }
+    if (filters.email) {
+      where.email = { contains: filters.email, mode: 'insensitive' };
+    }
+
+    return this.prisma.driver.findMany({ where });
   }
 }
