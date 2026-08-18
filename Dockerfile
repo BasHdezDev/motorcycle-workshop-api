@@ -11,6 +11,8 @@ FROM dependencies AS build
 
 COPY . .
 
+RUN npx prisma generate
+
 RUN npm run build
 
 
@@ -25,6 +27,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/generated ./generated
 
 EXPOSE 3000
 
