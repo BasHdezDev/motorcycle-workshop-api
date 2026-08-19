@@ -43,7 +43,9 @@ async function bootstrap() {
     .addTag('service-orders')
     .addTag('health')
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
 
   registerQueryRoutes(app);
 
