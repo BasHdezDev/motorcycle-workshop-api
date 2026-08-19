@@ -14,6 +14,7 @@ describe('DriverService', () => {
       create: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+      count: jest.fn(),
     },
   };
 
@@ -78,13 +79,24 @@ describe('DriverService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of drivers', async () => {
-      const expected = [{ id: 'uuid-1' }, { id: 'uuid-2' }];
-      mockPrismaService.driver.findMany.mockResolvedValue(expected);
+    it('should return paginated drivers', async () => {
+      const drivers = [{ id: 'uuid-1' }, { id: 'uuid-2' }];
+      mockPrismaService.driver.findMany.mockResolvedValue(drivers);
+      mockPrismaService.driver.count.mockResolvedValue(2);
 
-      const result = await service.findAll();
+      const result = await service.findAll({ page: 1, limit: 10 });
 
-      expect(result).toEqual(expected);
+      expect(result.data).toEqual(drivers);
+      expect(result.meta).toEqual({
+        total: 2,
+        page: 1,
+        limit: 10,
+        totalPages: 1,
+      });
+      expect(mockPrismaService.driver.findMany).toHaveBeenCalledWith({
+        skip: 0,
+        take: 10,
+      });
     });
   });
 

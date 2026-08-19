@@ -5,6 +5,8 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { NotFoundException } from '@nestjs/common';
 import { UpdateDriverDto } from './dto/update-driver.dto/update-driver.dto';
 import { QueryDriverDto } from './dto/query-driver.dto/query-driver.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
+import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class DriverService {
@@ -64,8 +66,25 @@ export class DriverService {
     return this.prisma.driver.delete({ where: { id } });
   }
 
-  findAll() {
-    return this.prisma.driver.findMany();
+  async findAll(pagination: PaginationQueryDto): Promise<PaginatedResult<any>> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.driver.findMany({ skip, take: limit }),
+      this.prisma.driver.count(),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   search(filters: QueryDriverDto) {
