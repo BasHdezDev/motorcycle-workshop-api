@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { DriverModule } from './driver/driver.module';
 import { MotorcycleModule } from './motorcycle/motorcycle.module';
 import { ServiceOrderModule } from './service-order/service-order.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -15,6 +16,7 @@ import { ServiceOrderModule } from './service-order/service-order.module';
     DriverModule,
     MotorcycleModule,
     ServiceOrderModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
