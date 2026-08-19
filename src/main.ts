@@ -14,6 +14,8 @@ import { QueryMotorcycleDto } from './motorcycle/dto/query-motorcycle.dto/query-
 import { ServiceOrderService } from './service-order/service-order.service';
 import { QueryServiceOrderDto } from './service-order/dto/query-service-order.dto/query-service-order.dto';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as packageJson from '../package.json';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -29,6 +31,19 @@ async function bootstrap() {
   );
 
   app.useGlobalFilters(new HttpExceptionFilter());
+
+  const config = new DocumentBuilder()
+    .setTitle('Motorcycle Workshop API')
+    .setDescription(
+      'RESTful API for managing a motorcycle repair workshop: drivers, motorcycles, and service orders.',
+    )
+    .setVersion(packageJson.version)
+    .addTag('drivers')
+    .addTag('motorcycles')
+    .addTag('service-orders')
+    .addTag('health')
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
 
   registerQueryRoutes(app);
 
