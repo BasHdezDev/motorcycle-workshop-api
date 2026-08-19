@@ -32,6 +32,7 @@ describe('HealthController', () => {
 
         expect(result.status).toBe('ok');
         expect(result.database).toBe('up');
+        expect(result.version).toBeDefined();
         expect(result.timestamp).toBeDefined();
     });
 

@@ -1,5 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import * as packageJson from '../../package.json';
 
 @Controller('health')
 export class HealthController {
@@ -12,6 +13,7 @@ export class HealthController {
             return {
                 status: 'ok',
                 database: 'up',
+                version: packageJson.version,
                 timestamp: new Date().toISOString(),
             };
         } catch (error) {
@@ -19,6 +21,7 @@ export class HealthController {
                 {
                     status: 'error',
                     database: 'down',
+                    version: packageJson.version,
                     timestamp: new Date().toISOString(),
                 },
                 HttpStatus.SERVICE_UNAVAILABLE,
