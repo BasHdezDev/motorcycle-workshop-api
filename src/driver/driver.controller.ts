@@ -3,7 +3,7 @@ import { DriverService } from './driver.service.js';
 import { CreateDriverDto } from './dto/create-driver.dto/create-driver.dto';
 import { Param } from '@nestjs/common';
 import { UpdateDriverDto } from './dto/update-driver.dto/update-driver.dto.js';
-import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto/pagination-query.dto';
 
 @Controller('drivers')
 export class DriverController {

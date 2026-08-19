@@ -2,7 +2,7 @@ import { Body, Controller, Post, Get, Param, Patch, Delete, Query } from '@nestj
 import { MotorcycleService } from './motorcycle.service.js';
 import { CreateMotorcycleDto } from './dto/create-motorcycle.dto/create-motorcycle.dto.js';
 import { UpdateMotorcycleDto } from './dto/update-motorcycle.dto/update-motorcycle.dto.js';
-import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto/pagination-query.dto';
 
 @Controller('motorcycles')
 export class MotorcycleController {

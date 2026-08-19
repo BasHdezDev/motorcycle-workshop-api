@@ -3,7 +3,7 @@ import { ServiceOrderService } from './service-order.service.js';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
 import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto.js';
 import { ChangeStatusDto } from './dto/change-status.dto/change-status.dto.js';
-import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto/pagination-query.dto';
 
 @Controller('service-orders')
 export class ServiceOrderController {
