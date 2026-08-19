@@ -1,12 +1,15 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsUUID } from 'class-validator';
 import { ServiceOrderStatus } from '../../../../generated/prisma/client.js';
 
 export class QueryServiceOrderDto {
-  @IsOptional()
-  @IsUUID()
-  motorcycleId?: string;
+    @ApiPropertyOptional({ example: 'e4a1c8b0-...' })
+    @IsOptional()
+    @IsUUID()
+    motorcycleId?: string;
 
-  @IsOptional()
-  @IsEnum(ServiceOrderStatus)
-  status?: ServiceOrderStatus;
+    @ApiPropertyOptional({ enum: ServiceOrderStatus, example: 'UNDER_REPAIR' })
+    @IsOptional()
+    @IsEnum(ServiceOrderStatus)
+    status?: ServiceOrderStatus;
 }
