@@ -4,7 +4,7 @@ import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { DriverService } from './driver/driver.service';
@@ -13,6 +13,7 @@ import { MotorcycleService } from './motorcycle/motorcycle.service';
 import { QueryMotorcycleDto } from './motorcycle/dto/query-motorcycle.dto/query-motorcycle.dto';
 import { ServiceOrderService } from './service-order/service-order.service';
 import { QueryServiceOrderDto } from './service-order/dto/query-service-order.dto/query-service-order.dto';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -27,6 +28,8 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new HttpExceptionFilter());
+
   registerQueryRoutes(app);
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
@@ -37,7 +40,9 @@ async function bootstrap() {
 // equivalent (its @Query() decorator is for query strings, not this HTTP
 // verb), so these routes are added directly on the underlying Fastify
 // instance. Because they bypass Nest's pipeline, validation is done
-// manually here using the same class-validator DTOs used elsewhere.
+// manually here using the same class-validator DTOs used elsewhere, and
+// errors are thrown as standard Nest exceptions so the global
+// HttpExceptionFilter formats them the same way as every other endpoint.
 function registerQueryRoutes(app: NestFastifyApplication) {
   const fastify = app.getHttpAdapter().getInstance();
 
@@ -49,14 +54,7 @@ function registerQueryRoutes(app: NestFastifyApplication) {
     method: 'QUERY',
     url: '/drivers',
     handler: async (request, reply) => {
-      const { dto, errors } = await validateBody(QueryDriverDto, request.body);
-      if (errors.length > 0) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: 'Bad Request',
-          message: errors,
-        })
-      }
+      const dto = await validateBody(QueryDriverDto, request.body);
       reply.send(await driverService.search(dto));
     },
   });
@@ -65,14 +63,7 @@ function registerQueryRoutes(app: NestFastifyApplication) {
     method: 'QUERY',
     url: '/motorcycles',
     handler: async (request, reply) => {
-      const { dto, errors } = await validateBody(QueryMotorcycleDto, request.body);
-      if (errors.length > 0) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: 'Bad Request',
-          message: errors,
-        })
-      }
+      const dto = await validateBody(QueryMotorcycleDto, request.body);
       reply.send(await motorcycleService.search(dto));
     },
   });
@@ -81,14 +72,7 @@ function registerQueryRoutes(app: NestFastifyApplication) {
     method: 'QUERY',
     url: '/service-orders',
     handler: async (request, reply) => {
-      const { dto, errors } = await validateBody(QueryServiceOrderDto, request.body);
-      if (errors.length > 0) {
-        return reply.status(400).send({
-          statusCode: 400,
-          error: 'Bad Request',
-          message: errors,
-        })
-      }
+      const dto = await validateBody(QueryServiceOrderDto, request.body);
       reply.send(await serviceOrderService.search(dto));
     },
   });
@@ -97,16 +81,17 @@ function registerQueryRoutes(app: NestFastifyApplication) {
 async function validateBody<T extends object>(
   dtoClass: new () => T,
   body: unknown,
-): Promise<{ dto: T; errors: string[] }> {
+): Promise<T> {
   const dto = plainToInstance(dtoClass, body ?? {});
-  const validationErrors = await validate(dto, {
+  const errors = await validate(dto, {
     whitelist: true,
     forbidNonWhitelisted: true,
   });
-  const errors = validationErrors.flatMap((e) =>
-    Object.values(e.constraints ?? {}),
-  );
-  return { dto, errors };
+  if (errors.length > 0) {
+    const messages = errors.flatMap((e) => Object.values(e.constraints ?? {}));
+    throw new BadRequestException(messages);
+  }
+  return dto;
 }
 
 bootstrap();
