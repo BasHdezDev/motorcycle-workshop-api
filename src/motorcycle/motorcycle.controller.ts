@@ -1,7 +1,8 @@
-import { Body, Controller, Post, Get, Param, Patch, Delete } from '@nestjs/common';
+import { Body, Controller, Post, Get, Param, Patch, Delete, Query } from '@nestjs/common';
 import { MotorcycleService } from './motorcycle.service.js';
 import { CreateMotorcycleDto } from './dto/create-motorcycle.dto/create-motorcycle.dto.js';
 import { UpdateMotorcycleDto } from './dto/update-motorcycle.dto/update-motorcycle.dto.js';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto.js';
 
 @Controller('motorcycles')
 export class MotorcycleController {
@@ -13,8 +14,8 @@ export class MotorcycleController {
     }
 
     @Get()
-    findAll() {
-        return this.motorcycleService.findAll();
+    findAll(@Query() pagination: PaginationQueryDto) {
+        return this.motorcycleService.findAll(pagination);
     }
 
     @Get(':id')

@@ -50,13 +50,20 @@ describe('MotorcycleController', () => {
         expect(result).toEqual({ id: 'uuid-1', ...dto });
     });
 
-    it('findAll should call service.findAll', async () => {
-        mockMotorcycleService.findAll.mockResolvedValue([{ id: 'uuid-1' }]);
+    it('findAll should call service.findAll with pagination params', async () => {
+        const paginatedResult = {
+            data: [{ id: 'uuid-1' }],
+            meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+        };
+        mockMotorcycleService.findAll.mockResolvedValue(paginatedResult);
 
-        const result = await controller.findAll();
+        const result = await controller.findAll({ page: 1, limit: 10 });
 
-        expect(mockMotorcycleService.findAll).toHaveBeenCalled();
-        expect(result).toEqual([{ id: 'uuid-1' }]);
+        expect(mockMotorcycleService.findAll).toHaveBeenCalledWith({
+            page: 1,
+            limit: 10,
+        });
+        expect(result).toEqual(paginatedResult);
     });
 
     it('findOne should call service.findOne with the id', async () => {

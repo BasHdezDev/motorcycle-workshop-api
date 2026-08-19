@@ -15,6 +15,7 @@ describe('MotorcycleService', () => {
             create: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+            count: jest.fn(),
         },
     };
 
@@ -64,10 +65,24 @@ describe('MotorcycleService', () => {
     });
 
     describe('read and search', () => {
-        it('should return all motorcycles', async () => {
-            const expected = [{ id: 'motorcycle-1' }];
-            mockPrismaService.motorcycle.findMany.mockResolvedValue(expected);
-            await expect(service.findAll()).resolves.toEqual(expected);
+        it('should return paginated motorcycles', async () => {
+            const motorcycles = [{ id: 'uuid-1' }, { id: 'uuid-2' }];
+            mockPrismaService.motorcycle.findMany.mockResolvedValue(motorcycles);
+            mockPrismaService.motorcycle.count.mockResolvedValue(2);
+
+            const result = await service.findAll({ page: 1, limit: 10 });
+
+            expect(result.data).toEqual(motorcycles);
+            expect(result.meta).toEqual({
+                total: 2,
+                page: 1,
+                limit: 10,
+                totalPages: 1,
+            });
+            expect(mockPrismaService.motorcycle.findMany).toHaveBeenCalledWith({
+                skip: 0,
+                take: 10,
+            });
         });
 
         it('should return one motorcycle or throw when absent', async () => {

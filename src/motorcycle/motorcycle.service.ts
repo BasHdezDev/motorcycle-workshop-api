@@ -4,6 +4,8 @@ import { CreateMotorcycleDto } from './dto/create-motorcycle.dto/create-motorcyc
 import { Prisma } from '../../generated/prisma/client.js';
 import { UpdateMotorcycleDto } from './dto/update-motorcycle.dto/update-motorcycle.dto';
 import { QueryMotorcycleDto } from './dto/query-motorcycle.dto/query-motorcycle.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
+import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class MotorcycleService {
@@ -31,8 +33,25 @@ export class MotorcycleService {
         }
     }
 
-    findAll() {
-        return this.prisma.motorcycle.findMany();
+    async findAll(pagination: PaginationQueryDto): Promise<PaginatedResult<any>> {
+        const page = pagination.page ?? 1;
+        const limit = pagination.limit ?? 10;
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            this.prisma.motorcycle.findMany({ skip, take: limit }),
+            this.prisma.motorcycle.count(),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 
     async findOne(id: string) {
