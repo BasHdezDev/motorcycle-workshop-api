@@ -58,3 +58,19 @@ jobs:
         run: railway up --service motorcycle-workshop-api
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
+
+      - name: Wait for deployment to be healthy
+        run: |
+          echo "Waiting for the app to boot..."
+          sleep 20
+          for i in {1..6}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://motorcycle-workshop-api-production.up.railway.app/health)
+            if [ "$STATUS" -eq 200 ]; then
+              echo "✅ Health check passed (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attempt $i: got HTTP $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Health check failed after multiple attempts"
+          exit 1    
