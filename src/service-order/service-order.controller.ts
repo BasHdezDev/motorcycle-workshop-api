@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post, Patch } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Patch, Query } from '@nestjs/common';
 import { ServiceOrderService } from './service-order.service.js';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
 import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto.js';
 import { ChangeStatusDto } from './dto/change-status.dto/change-status.dto.js';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto.js';
 
 @Controller('service-orders')
 export class ServiceOrderController {
@@ -14,8 +15,8 @@ export class ServiceOrderController {
     }
 
     @Get()
-    findAll() {
-        return this.serviceOrderService.findAll();
+    findAll(@Query() pagination: PaginationQueryDto) {
+        return this.serviceOrderService.findAll(pagination);
     }
 
     @Get(':id')

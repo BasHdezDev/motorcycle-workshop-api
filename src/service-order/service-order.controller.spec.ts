@@ -46,13 +46,20 @@ describe('ServiceOrderController', () => {
         expect(result).toEqual({ id: 'uuid-1', ...dto });
     });
 
-    it('findAll should call service.findAll', async () => {
-        mockServiceOrderService.findAll.mockResolvedValue([{ id: 'uuid-1' }]);
+    it('findAll should call service.findAll with pagination params', async () => {
+        const paginatedResult = {
+            data: [{ id: 'uuid-1' }],
+            meta: { total: 1, page: 1, limit: 10, totalPages: 1 },
+        };
+        mockServiceOrderService.findAll.mockResolvedValue(paginatedResult);
 
-        const result = await controller.findAll();
+        const result = await controller.findAll({ page: 1, limit: 10 });
 
-        expect(mockServiceOrderService.findAll).toHaveBeenCalled();
-        expect(result).toEqual([{ id: 'uuid-1' }]);
+        expect(mockServiceOrderService.findAll).toHaveBeenCalledWith({
+            page: 1,
+            limit: 10,
+        });
+        expect(result).toEqual(paginatedResult);
     });
 
     it('findOne should call service.findOne with the id', async () => {

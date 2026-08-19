@@ -5,6 +5,8 @@ import { Prisma, ServiceOrderStatus } from '../../generated/prisma/client.js';
 import { UpdateServiceOrderDto } from './dto/update-service-order.dto/update-service-order.dto';
 import { ChangeStatusDto } from './dto/change-status.dto/change-status.dto';
 import { QueryServiceOrderDto } from './dto/query-service-order.dto/query-service-order.dto';
+import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
+import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -62,8 +64,25 @@ export class ServiceOrderService {
         }
     }
 
-    findAll() {
-        return this.prisma.serviceOrder.findMany();
+    async findAll(pagination: PaginationQueryDto): Promise<PaginatedResult<any>> {
+        const page = pagination.page ?? 1;
+        const limit = pagination.limit ?? 10;
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            this.prisma.serviceOrder.findMany({ skip, take: limit }),
+            this.prisma.serviceOrder.count(),
+        ]);
+
+        return {
+            data,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            },
+        };
     }
 
     async findOne(id: string) {
