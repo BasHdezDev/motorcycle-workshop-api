@@ -1,11 +1,20 @@
-import { Body, Controller, Delete, Get, Patch, Post, Query } from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    Param,
+    Patch,
+    Post,
+    Query,
+} from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { DriverService } from './driver.service.js';
 import { CreateDriverDto } from './dto/create-driver.dto/create-driver.dto';
-import { Param } from '@nestjs/common';
 import { UpdateDriverDto } from './dto/update-driver.dto/update-driver.dto.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto/pagination-query.dto';
-import { ApiOperation } from 'node_modules/@nestjs/swagger/dist/decorators/index.js';
 
+@ApiTags('drivers')
 @Controller('drivers')
 export class DriverController {
     constructor(private readonly driverService: DriverService) { }
@@ -39,6 +48,4 @@ export class DriverController {
     remove(@Param('id') id: string) {
         return this.driverService.remove(id);
     }
-
-
 }
