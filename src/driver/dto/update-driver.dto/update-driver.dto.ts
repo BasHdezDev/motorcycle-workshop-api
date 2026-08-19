@@ -1,23 +1,29 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString } from 'class-validator';
 
 export class UpdateDriverDto {
-  @IsOptional()
-  @IsString()
-  firstName?: string;
+    @ApiPropertyOptional({ example: 'Pirineo' })
+    @IsOptional()
+    @IsString()
+    firstName?: string;
 
-  @IsOptional()
-  @IsString()
-  lastName?: string;
+    @ApiPropertyOptional({ example: 'Gomez' })
+    @IsOptional()
+    @IsString()
+    lastName?: string;
 
-  @IsOptional()
-  @IsString()
-  documentNumber?: string;
+    @ApiPropertyOptional({ example: '123456789' })
+    @IsOptional()
+    @IsString()
+    documentNumber?: string;
 
-  @IsOptional()
-  @IsString()
-  phone?: string;
+    @ApiPropertyOptional({ example: '3001234567' })
+    @IsOptional()
+    @IsString()
+    phone?: string;
 
-  @IsOptional()
-  @IsEmail()
-  email?: string;
+    @ApiPropertyOptional({ example: 'juan@test.com' })
+    @IsOptional()
+    @IsEmail()
+    email?: string;
 }
