@@ -36,8 +36,8 @@ jobs:
         run: |
           COVERAGE=$(node -e "console.log(require('./coverage/coverage-summary.json').total.statements.pct)")
           echo "Coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 85" | bc -l) )); then
-            echo "❌ Coverage $COVERAGE% is below the 85% threshold required for Production"
+          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below the 90% threshold required for Production"
             exit 1
           fi
           echo "✅ Coverage $COVERAGE% meets the threshold"
