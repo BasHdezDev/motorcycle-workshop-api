@@ -32,12 +32,12 @@ jobs:
       - name: Run tests with coverage
         run: npm run test:cov
 
-      - name: Enforce coverage threshold (85%)
+      - name: Enforce coverage threshold (91%)
         run: |
           COVERAGE=$(node -e "console.log(require('./coverage/coverage-summary.json').total.statements.pct)")
           echo "Coverage: $COVERAGE%"
-          if (( $(echo "$COVERAGE < 90" | bc -l) )); then
-            echo "❌ Coverage $COVERAGE% is below the 90% threshold required for Production"
+          if (( $(echo "$COVERAGE < 91" | bc -l) )); then
+            echo "❌ Coverage $COVERAGE% is below the 91% threshold required for Production"
             exit 1
           fi
           echo "✅ Coverage $COVERAGE% meets the threshold"
