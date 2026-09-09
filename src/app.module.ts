@@ -10,6 +10,7 @@ import { HealthModule } from './health/health.module';
 import { HealthV2Controller } from './v2/health/health-v2.controller';
 import { DriverV2Controller } from './v2/driver/driver-v2.controller';
 import { MotorcycleV2Controller } from './v2/motorcycle/motorcycle-v2.controller';
+import { ServiceOrderV2Controller } from './v2/service-order/service-order-v2.controller';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -25,7 +26,9 @@ import { MotorcycleV2Controller } from './v2/motorcycle/motorcycle-v2.controller
     AppController,
     HealthV2Controller,
     DriverV2Controller,
-    MotorcycleV2Controller,],
+    MotorcycleV2Controller,
+    ServiceOrderV2Controller,
+  ],
   providers: [AppService],
 })
 export class AppModule { }
