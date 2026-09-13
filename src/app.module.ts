@@ -24,10 +24,6 @@ import { ServiceOrderV2Controller } from './v2/service-order/service-order-v2.co
   ],
   controllers: [
     AppController,
-    HealthV2Controller,
-    DriverV2Controller,
-    MotorcycleV2Controller,
-    ServiceOrderV2Controller,
   ],
   providers: [AppService],
 })
