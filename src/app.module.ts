@@ -7,6 +7,7 @@ import { DriverModule } from './driver/driver.module';
 import { MotorcycleModule } from './motorcycle/motorcycle.module';
 import { ServiceOrderModule } from './service-order/service-order.module';
 import { HealthModule } from './health/health.module';
+import { V2Module } from './v2/v2.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -17,6 +18,7 @@ import { HealthModule } from './health/health.module';
     MotorcycleModule,
     ServiceOrderModule,
     HealthModule,
+    V2Module,
   ],
   controllers: [
     AppController,
