@@ -14,6 +14,7 @@ spec:
       labels:
         app: api-b
     spec:
+      serviceAccountName: api-b-ksa
       containers:
         - name: api-b
           image: us-central1-docker.pkg.dev/motorcycle-workshop-v2/api-b-images/api-b:v2.0.0
@@ -29,3 +30,16 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+        - name: cloud-sql-proxy
+          image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0
+          args:
+            - "--structured-logs"
+            - "--port=5432"
+            - "motorcycle-workshop-v2:us-central1:motorcycle-workshop-db"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
