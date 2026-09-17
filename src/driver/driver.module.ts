@@ -4,6 +4,7 @@ import { DriverService } from './driver.service';
 
 @Module({
   controllers: [DriverController],
-  providers: [DriverService]
+  providers: [DriverService],
+  exports: [DriverService],
 })
 export class DriverModule {}

@@ -4,6 +4,7 @@ import { ServiceOrderService } from './service-order.service';
 
 @Module({
   controllers: [ServiceOrderController],
-  providers: [ServiceOrderService]
+  providers: [ServiceOrderService],
+  exports: [ServiceOrderService],
 })
 export class ServiceOrderModule {}
