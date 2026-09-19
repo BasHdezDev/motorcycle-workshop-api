@@ -7,6 +7,7 @@ import {
     Param,
     Query,
     UseGuards,
+    NotFoundException,
 } from '@nestjs/common';
 import { ServiceOrderService } from '../../service-order/service-order.service';
 import { CreateServiceOrderDto } from '../../service-order/dto/create-service-order.dto/create-service-order.dto';
@@ -29,6 +30,15 @@ export class ServiceOrderV2Controller {
     @Get('query')
     query(@Query() filters: QueryServiceOrderDto) {
         return this.serviceOrderService.search(filters);
+    }
+
+    @Get('interop/random')
+    async randomInterop() {
+        const record = await this.serviceOrderService.randomActive();
+        if (!record) {
+            throw new NotFoundException('No active orders available');
+        }
+        return record;
     }
 
     @Get(':id')

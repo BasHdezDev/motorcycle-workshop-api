@@ -159,6 +159,29 @@ export class ServiceOrderService {
         });
     }
 
+    async randomActive() {
+        const activeOrders = await this.prisma.serviceOrder.findMany({
+            where: { status: { in: ACTIVE_STATUSES } },
+        });
+
+        if (activeOrders.length === 0) return null;
+
+        const order = activeOrders[Math.floor(Math.random() * activeOrders.length)];
+
+        return {
+            source: 'workshop-orders-api',
+            kind: 'order',
+            id: order.id,
+            label: `Orden ${order.orderNumber}`,
+            attributes: {
+                status: order.status,
+                problemDescription: order.problemDescription,
+                motorcycleId: order.motorcycleId,
+            },
+            retrievedAt: new Date().toISOString(),
+        };
+    }
+
     search(filters: QueryServiceOrderDto) {
         const where: Prisma.ServiceOrderWhereInput = {};
 
