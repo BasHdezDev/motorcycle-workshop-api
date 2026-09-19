@@ -1,15 +1,11 @@
 import { Controller, Get, Param, NotFoundException, Res } from '@nestjs/common';
-import type { FastifyReply } from 'fastify';
+import type { Response } from 'express';
 import { resolveTarget } from '../config/api-targets';
 
 @Controller('metrics')
 export class MetricsController {
-    // Sin ApiKeyGuard aquí a propósito: Prometheus hace scrape periódico
-    // y normalmente no manda x-api-key propio. Si quieres protegerlo igual,
-    // dime y le agrego el guard.
-
     @Get(':api')
-    async proxyMetrics(@Param('api') api: string, @Res() reply: FastifyReply) {
+    async proxyMetrics(@Param('api') api: string, @Res() reply: Response) {
         const target = resolveTarget(api);
         if (!target) throw new NotFoundException(`Unknown api: ${api}`);
 
@@ -17,7 +13,7 @@ export class MetricsController {
             headers: { 'x-api-key': target.apiKey },
         });
 
-        const body = await response.text(); // CRÍTICO: .text(), nunca .json()
+        const body = await response.text();
         reply
             .status(response.status)
             .header('content-type', 'text/plain; version=0.0.4')

@@ -1,5 +1,5 @@
 import { Controller, Get, Param, Headers, NotFoundException, UseGuards, Res } from '@nestjs/common';
-import type { FastifyReply } from 'fastify';
+import type { Response } from 'express';
 import { randomUUID } from 'crypto';
 import { resolveTarget } from '../config/api-targets';
 import { ApiKeyGuard } from '../common/api-key.guard';
@@ -11,7 +11,7 @@ export class InteropController {
     async proxyRandom(
         @Param('api') api: string,
         @Headers('x-correlation-id') incomingCorrelationId: string | undefined,
-        @Res() reply: FastifyReply,
+        @Res() reply: Response,
     ) {
         const target = resolveTarget(api);
         if (!target) throw new NotFoundException(`Unknown api: ${api}`);
