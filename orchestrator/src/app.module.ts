@@ -4,10 +4,11 @@ import { InteropController } from './interop/interop.controller';
 import { MetricsController } from './interop/metrics.controller';
 import { HealthController } from './health/health.controller';
 import { FlujoService } from './flujo/flujo.service';
+import { ConsumerService } from './flujo/consumer.service';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true })],
   controllers: [InteropController, MetricsController, HealthController],
-  providers: [FlujoService],
+  providers: [FlujoService, ConsumerService],
 })
 export class AppModule { }
