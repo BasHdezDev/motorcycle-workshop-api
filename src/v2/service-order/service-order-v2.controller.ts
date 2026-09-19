@@ -43,7 +43,7 @@ export class ServiceOrderV2Controller {
 
     @Get(':id')
     findOne(@Param('id') id: string) {
-        return this.serviceOrderService.findOne(id);
+        return this.serviceOrderService.findOneWithPartner(id);
     }
 
     @Post()

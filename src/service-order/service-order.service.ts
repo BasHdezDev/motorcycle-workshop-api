@@ -30,6 +30,10 @@ const ALLOWED_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
 export class ServiceOrderService {
     constructor(private readonly prisma: PrismaService) { }
 
+    private isValidPartnerRecord(r: any): boolean {
+        return r && typeof r.source === 'string' && typeof r.id === 'string';
+    }
+
     async create(dto: CreateServiceOrderDto) {
         const motorcycle = await this.prisma.motorcycle.findUnique({
             where: { id: dto.motorcycleId },
@@ -180,6 +184,42 @@ export class ServiceOrderService {
             },
             retrievedAt: new Date().toISOString(),
         };
+    }
+
+    async findOneWithPartner(id: string) {
+        const order = await this.findOne(id); // 404 primero si no existe — nunca llama al orquestador si esto falla
+
+        const orchestratorUrl = process.env.ORCHESTRATOR_URL;
+        const orchestratorApiKey = process.env.ORCHESTRATOR_API_KEY;
+
+        if (!orchestratorUrl) {
+            return { ...order, partner: { status: 'disabled' } };
+        }
+
+        try {
+            const timeoutMs = Number(process.env.INTEROP_TIMEOUT_MS ?? 1500);
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+            const response = await fetch(`${orchestratorUrl}/interop/inventory/random`, {
+                headers: { 'x-api-key': orchestratorApiKey ?? '' },
+                signal: controller.signal,
+            });
+            clearTimeout(timeout);
+
+            if (!response.ok) {
+                return { ...order, partner: { status: 'unavailable' } };
+            }
+
+            const record = await response.json();
+            if (!this.isValidPartnerRecord(record)) {
+                return { ...order, partner: { status: 'unavailable' } };
+            }
+
+            return { ...order, partner: { status: 'ok', record } };
+        } catch {
+            return { ...order, partner: { status: 'unavailable' } };
+        }
     }
 
     search(filters: QueryServiceOrderDto) {
