@@ -197,4 +197,4 @@ This project follows [Semantic Versioning](https://semver.org/). See the [Releas
 - [x] Health check with DB connectivity verification
 - [x] Unified error handling
 - [x] Pagination on list endpoints
-- [ ] Swagger / OpenAPI documentation
+- [x] Swagger / OpenAPI documentation
