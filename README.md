@@ -188,8 +188,10 @@ architecture**, integrating with a partner API hosted on a different cloud
 provider through a dedicated Orchestrator service.
 
 Client
+
 │
 ▼
+
 Orchestrator (GKE) ──────► API B (this project, GKE + Cloud SQL)
 │
 └───────────────────────► API A (partner, AWS)
