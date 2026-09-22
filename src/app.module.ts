@@ -8,6 +8,7 @@ import { MotorcycleModule } from './motorcycle/motorcycle.module';
 import { ServiceOrderModule } from './service-order/service-order.module';
 import { HealthModule } from './health/health.module';
 import { V2Module } from './v2/v2.module';
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -19,6 +20,7 @@ import { V2Module } from './v2/v2.module';
     ServiceOrderModule,
     HealthModule,
     V2Module,
+    MetricsModule,
   ],
   controllers: [
     AppController,

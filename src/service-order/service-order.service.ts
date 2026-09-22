@@ -7,6 +7,8 @@ import { ChangeStatusDto } from './dto/change-status.dto/change-status.dto';
 import { QueryServiceOrderDto } from './dto/query-service-order.dto/query-service-order.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
 import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
+import { Counter } from 'prom-client';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -28,7 +30,9 @@ const ALLOWED_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
 
 @Injectable()
 export class ServiceOrderService {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(private readonly prisma: PrismaService,
+        @InjectMetric('partner_lookups_total') private readonly partnerLookups: Counter<string>,
+    ) { }
 
     private isValidPartnerRecord(r: any): boolean {
         return r && typeof r.source === 'string' && typeof r.id === 'string';
@@ -193,6 +197,7 @@ export class ServiceOrderService {
         const orchestratorApiKey = process.env.ORCHESTRATOR_API_KEY;
 
         if (!orchestratorUrl) {
+            this.partnerLookups.inc({ outcome: 'disabled' });
             return { ...order, partner: { status: 'disabled' } };
         }
 
@@ -208,16 +213,20 @@ export class ServiceOrderService {
             clearTimeout(timeout);
 
             if (!response.ok) {
+                this.partnerLookups.inc({ outcome: 'unavailable' });
                 return { ...order, partner: { status: 'unavailable' } };
             }
 
             const record = await response.json();
             if (!this.isValidPartnerRecord(record)) {
+                this.partnerLookups.inc({ outcome: 'unavailable' });
                 return { ...order, partner: { status: 'unavailable' } };
             }
 
+            this.partnerLookups.inc({ outcome: 'ok' });
             return { ...order, partner: { status: 'ok', record } };
         } catch {
+            this.partnerLookups.inc({ outcome: 'unavailable' });
             return { ...order, partner: { status: 'unavailable' } };
         }
     }
