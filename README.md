@@ -170,16 +170,101 @@ Two independent pipelines, each running **build → test → coverage gate → d
 
 Both pipelines stop automatically — without deploying — if the build fails, any test fails, or coverage falls below the threshold.
 
----
-
 ## 🌎 Live Environments
 
 | Environment | URL |
 |---|---|
-| Production | `https://motorcycle-workshop-api-production.up.railway.app` |
-| Testing | `https://motorcycle-workshop-api-testing.up.railway.app` |
+| Production (v1) | `https://motorcycle-workshop-api-production.up.railway.app` |
+| Testing (v1) | `https://motorcycle-workshop-api-testing.up.railway.app` |
+| **API B (v2, GKE)** | `http://35.185.40.218` |
+| **Orchestrator (GKE)** | `http://35.237.27.227` |
 
 ---
+
+## 🧩 API v2 — Multicloud Integration
+
+Version 2 evolves the project from a single API into a **multicloud microservices
+architecture**, integrating with a partner API hosted on a different cloud
+provider through a dedicated Orchestrator service.
+
+Client
+│
+▼
+Orchestrator (GKE) ──────► API B (this project, GKE + Cloud SQL)
+│
+└───────────────────────► API A (partner, AWS)
+
+
+Both APIs expose independent `v2` routes (`/api/v2/*` here, `/v2/*` on the
+partner side) that never call each other directly — all cross-cloud
+communication is brokered exclusively by the Orchestrator, so a failure on
+either side degrades gracefully instead of cascading.
+
+### 🛠️ v2 Tech Additions
+
+<div align="center">
+
+| Layer | Technology |
+|---|---|
+| Container orchestration | ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat&logo=kubernetes&logoColor=white) (GKE Autopilot) |
+| Managed database | ![Cloud SQL](https://img.shields.io/badge/Cloud_SQL-4285F4?style=flat&logo=googlecloud&logoColor=white) (PostgreSQL) |
+| Image registry | ![Artifact Registry](https://img.shields.io/badge/Artifact_Registry-4285F4?style=flat&logo=googlecloud&logoColor=white) |
+| Async messaging | ![Pub/Sub](https://img.shields.io/badge/Pub%2FSub-4285F4?style=flat&logo=googlecloud&logoColor=white) (topic + DLQ) |
+| Cross-cloud identity | Workload Identity (GKE ↔ GCP service accounts) |
+
+</div>
+
+### 📡 New v2 Endpoints (API B)
+
+All `v2` routes live under `/api/v2` and require the `x-api-key` header
+(except `/api/v2/health`).
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/v2/health` | Health check for the v2 surface (no auth) |
+| GET | `/api/v2/drivers`, `/motorcycles`, `/service-orders` | Same CRUD as v1, reusing existing business logic |
+| GET | `/api/v2/service-orders/interop/random` | Returns a random **active** service order in the shared multicloud contract format (`source`, `kind`, `id`, `label`, `attributes`, `retrievedAt`) |
+| GET | `/api/v2/service-orders/:id` | Returns the order **enriched with a `partner` field** — a live record fetched from API A through the Orchestrator |
+
+**`partner.status` values:**
+
+| Value | Meaning |
+|---|---|
+| `ok` | Orchestrator responded with a valid record |
+| `unavailable` | Orchestrator/partner errored, timed out (1.5s), or returned malformed data — **the local order is still returned** |
+| `disabled` | No Orchestrator configured — not even attempted |
+
+> Design principle: a failure on the partner's cloud must never turn a
+> perfectly good local read into an error.
+
+### 🎭 The Orchestrator
+
+A separate, independently deployable NestJS service (`orchestrator/`, own
+`package.json` and Dockerfile, same repository) exposing:
+
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/v2/flujo` | Demonstrates the full saga-lite flow: trace-id → correlation-id → calls API B → calls API A → publishes an async event to Pub/Sub |
+| GET | `/interop/:api/random` | Proxies to `inventory` (API A) or `orders` (API B), injecting the right API key and propagating `X-Correlation-Id` |
+| GET | `/metrics/:api` | Proxies raw Prometheus-format metrics from either API |
+
+### 📨 Async Messaging (Pub/Sub)
+
+| Resource | Name |
+|---|---|
+| Topic | `flujo-v2` |
+| Subscription | `flujo-v2-sub` (5 delivery attempts, exponential backoff) |
+| Dead Letter Topic | `flujo-v2-dlq` |
+| Dead Letter Subscription | `flujo-v2-dlq-sub` |
+
+### 🔑 Additional v2 Environment Variables
+
+API_KEY=
+ORCHESTRATOR_URL=
+ORCHESTRATOR_API_KEY=
+INTEROP_TIMEOUT_MS=1500
+PUBSUB_PROJECT_ID=
+PUBSUB_TOPIC=
 
 ## 📌 Versioning
 
@@ -198,3 +283,9 @@ This project follows [Semantic Versioning](https://semver.org/). See the [Releas
 - [x] Unified error handling
 - [x] Pagination on list endpoints
 - [x] Swagger / OpenAPI documentation
+- [x] API v2 with independent, API-key-protected routes
+- [x] Dockerized and deployed to GKE (Kubernetes)
+- [x] Managed PostgreSQL via Cloud SQL with Workload Identity
+- [x] Multicloud integration via a dedicated Orchestrator service
+- [x] Async messaging with Pub/Sub (topic, subscription, DLQ, retries)
+- [x] Cross-cloud correlation ID tracing
