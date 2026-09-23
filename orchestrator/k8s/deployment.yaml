@@ -14,6 +14,11 @@ spec:
       labels:
         app: orchestrator
       annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "4000"
+
+        # Grafana Alloy / Kubernetes Monitoring 
         k8s.grafana.com/scrape: "true"
         k8s.grafana.com/metrics.portNumber: "4000"
         k8s.grafana.com/metrics.path: "/metrics"

@@ -1,33 +1,49 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: api-b-deployment
   labels:
     app: api-b
+
 spec:
   replicas: 2
+
   selector:
     matchLabels:
       app: api-b
+
   template:
     metadata:
       labels:
         app: api-b
+
       annotations:
+        # Prometheus
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "3000"
+        prometheus.io/path: "/metrics"
+
+        # Grafana Alloy / Kubernetes Monitoring
         k8s.grafana.com/scrape: "true"
         k8s.grafana.com/metrics.portNumber: "3000"
         k8s.grafana.com/metrics.path: "/metrics"
         k8s.grafana.com/job: "api-b"
+
     spec:
       serviceAccountName: api-b-ksa
+
       containers:
         - name: api-b
           image: us-central1-docker.pkg.dev/motorcycle-workshop-v2/api-b-images/api-b:v2.2.0
+
           ports:
             - containerPort: 3000
+
           envFrom:
             - secretRef:
                 name: api-b-secrets
+
           resources:
             requests:
               cpu: "250m"
@@ -35,12 +51,15 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+
         - name: cloud-sql-proxy
           image: gcr.io/cloud-sql-connectors/cloud-sql-proxy:2.14.0
+
           args:
             - "--structured-logs"
             - "--port=5432"
             - "motorcycle-workshop-v2:us-central1:motorcycle-workshop-db"
+
           resources:
             requests:
               cpu: "100m"

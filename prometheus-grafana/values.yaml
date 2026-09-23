@@ -1,0 +1,56 @@
+prometheus-node-exporter:
+  enabled: false
+
+server:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  persistentVolume:
+    enabled: false
+
+  global:
+    scrape_interval: 15s
+    evaluation_interval: 15s
+
+  remoteWrite:
+    - url: https://prometheus-prod-66-prod-us-east-3.grafana.net/api/prom/push
+      basic_auth:
+        username: "3605600"
+        password_file: /etc/secrets/grafana-cloud/password
+
+  extraSecretMounts:
+    - name: grafana-cloud-credentials
+      mountPath: /etc/secrets/grafana-cloud
+      secretName: grafana-cloud-credentials
+      readOnly: true
+
+  extraScrapeConfigs:
+    - job_name: "kubernetes-pods"
+      kubernetes_sd_configs:
+        - role: pod
+
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_annotation_k8s_grafana_com_scrape]
+          action: keep
+          regex: "true"
+
+        - source_labels: [__meta_kubernetes_pod_annotation_k8s_grafana_com_job]
+          target_label: job
+
+        - source_labels: [__meta_kubernetes_pod_ip]
+          target_label: __address__
+
+        - source_labels: [__meta_kubernetes_pod_annotation_k8s_grafana_com_metrics_portNumber]
+          target_label: __tmp_port
+
+        - source_labels: [__address__, __tmp_port]
+          separator: ":"
+          target_label: __address__
+
+        - source_labels: [__meta_kubernetes_pod_annotation_k8s_grafana_com_metrics_path]
+          target_label: __metrics_path__
