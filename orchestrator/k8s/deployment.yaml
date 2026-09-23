@@ -27,7 +27,7 @@ spec:
       serviceAccountName: orchestrator-ksa
       containers:
         - name: orchestrator
-          image: us-central1-docker.pkg.dev/motorcycle-workshop-v2/orchestrator-images/orchestrator:v1.2.0
+          image: us-central1-docker.pkg.dev/motorcycle-workshop-v2/orchestrator-images/orchestrator:v1.3.0
           ports:
             - containerPort: 4000
           envFrom:
