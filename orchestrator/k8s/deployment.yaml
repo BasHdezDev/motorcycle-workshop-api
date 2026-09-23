@@ -15,14 +15,14 @@ spec:
         app: orchestrator
       annotations:
         k8s.grafana.com/scrape: "true"
-        k8s.grafana.com/metrics.portNumber: "3000"
+        k8s.grafana.com/metrics.portNumber: "4000"
         k8s.grafana.com/metrics.path: "/metrics"
-        k8s.grafana.com/job: "api-b"
+        k8s.grafana.com/job: "orchestrator"
     spec:
       serviceAccountName: orchestrator-ksa
       containers:
         - name: orchestrator
-          image: us-central1-docker.pkg.dev/motorcycle-workshop-v2/orchestrator-images/orchestrator:v1.1.0
+          image: us-central1-docker.pkg.dev/motorcycle-workshop-v2/orchestrator-images/orchestrator:v1.2.0
           ports:
             - containerPort: 4000
           envFrom:
