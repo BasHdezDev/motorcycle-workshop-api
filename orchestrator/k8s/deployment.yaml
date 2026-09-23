@@ -13,6 +13,11 @@ spec:
     metadata:
       labels:
         app: orchestrator
+      annotations:
+        k8s.grafana.com/scrape: "true"
+        k8s.grafana.com/metrics.portNumber: "3000"
+        k8s.grafana.com/metrics.path: "/metrics"
+        k8s.grafana.com/job: "api-b"
     spec:
       serviceAccountName: orchestrator-ksa
       containers:
