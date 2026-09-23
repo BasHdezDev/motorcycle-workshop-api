@@ -3,10 +3,17 @@ import type { Response } from 'express';
 import { randomUUID } from 'crypto';
 import { resolveTarget } from '../config/api-targets';
 import { ApiKeyGuard } from '../common/api-key.guard';
+import { Counter } from 'prom-client';
+import { InjectMetric } from '@willsoto/nestjs-prometheus';
 
 @Controller('interop')
 @UseGuards(ApiKeyGuard)
 export class InteropController {
+
+    constructor(@InjectMetric('interop_calls_total') private readonly interopCalls: Counter<string>
+    ) { }
+
+
     @Get(':api/random')
     async proxyRandom(
         @Param('api') api: string,
@@ -27,12 +34,15 @@ export class InteropController {
             });
 
             const body = await response.text();
+            this.interopCalls.inc({ api, outcome: response.ok ? 'ok' : 'error' });
+
             reply
                 .status(response.status)
                 .header('x-correlation-id', correlationId)
                 .header('content-type', 'application/json')
                 .send(body);
         } catch (error) {
+            this.interopCalls.inc({ api, outcome: 'error' });
             reply
                 .status(502)
                 .header('x-correlation-id', correlationId)
