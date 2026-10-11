@@ -9,3 +9,11 @@ coverage
 .idea
 *.log
 README.md
+orchestrator
+k8s
+docs
+terraform
+.terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
