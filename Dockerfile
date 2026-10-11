@@ -31,13 +31,10 @@ COPY --from=build /app/dist ./dist
 COPY --from=build /app/generated ./generated
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
-COPY docker-entrypoint.sh ./docker-entrypoint.sh
-
-RUN chmod +x docker-entrypoint.sh
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/health || exit 1
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["node", "dist/src/main.js"]
