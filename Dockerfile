@@ -21,6 +21,7 @@ FROM node:22-alpine AS production
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=8080
 
 COPY package*.json ./
 
@@ -34,9 +35,9 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
 RUN chmod +x docker-entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/health || exit 1
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
