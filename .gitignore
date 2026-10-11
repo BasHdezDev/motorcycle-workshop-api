@@ -26,3 +26,10 @@ coverage/
 .DS_Store
 Thumbs.db
 /generated/prisma
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+crash.log
