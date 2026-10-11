@@ -1,4 +1,16 @@
 services:
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: motorcycle-workshop-migrate
+    command: ['npx', 'prisma', 'migrate', 'deploy']
+    environment:
+      DATABASE_URL: postgresql://workshop_user:workshop_password@postgres:5432/motorcycle_workshop
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: 'no'
   api:
     build:
       context: .
@@ -9,6 +21,7 @@ services:
     env_file:
       - .env
     environment:
+      PORT: 8080
       DATABASE_URL: postgresql://workshop_user:workshop_password@postgres:5432/motorcycle_workshop
     depends_on:
       postgres:
