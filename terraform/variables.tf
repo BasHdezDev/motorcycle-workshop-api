@@ -14,3 +14,15 @@ variable "app_name" {
   type        = string
   default     = "workshop-v3"
 }
+
+variable "db_tier" {
+  description = "Machine type for the Cloud SQL instance (shared-core is the cheapest)."
+  type        = string
+  default     = "db-f1-micro"
+}
+
+variable "db_deletion_protection" {
+  description = "Protects Cloud SQL from deletion. Keep false for the V3 so terraform destroy works."
+  type        = bool
+  default     = false
+}
