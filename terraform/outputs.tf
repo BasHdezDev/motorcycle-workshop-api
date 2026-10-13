@@ -27,3 +27,13 @@ output "cloud_sql_connection_name" {
   description = "Cloud SQL connection name used by Cloud Run."
   value       = google_sql_database_instance.postgres.connection_name
 }
+
+output "cloud_run_service_name" {
+  description = "Cloud Run service name used by the deploy step."
+  value       = google_cloud_run_v2_service.api.name
+}
+
+output "cloud_run_url" {
+  description = "Public URL of the API."
+  value       = google_cloud_run_v2_service.api.uri
+}
