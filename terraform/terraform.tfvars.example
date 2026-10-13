@@ -1,3 +1,4 @@
 project_id = "motorcycle-workshop-v3"
 region     = "us-central1"
 app_name   = "workshop-v3"
+github_repository = "YOUR_USER/YOUR_REPO"

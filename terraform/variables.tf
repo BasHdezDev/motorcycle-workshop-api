@@ -38,3 +38,8 @@ variable "db_user" {
   type        = string
   default     = "workshop_user"
 }
+
+variable "github_repository" {
+  description = "GitHub repository allowed to deploy, in owner/name format."
+  type        = string
+}
