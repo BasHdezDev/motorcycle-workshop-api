@@ -86,3 +86,11 @@ resource "google_cloud_run_v2_service" "api" {
     google_project_iam_member.runtime_cloudsql_client,
   ]
 }
+
+resource "google_cloud_run_v2_service_iam_member" "public" {
+  project  = google_cloud_run_v2_service.api.project
+  location = google_cloud_run_v2_service.api.location
+  name     = google_cloud_run_v2_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
