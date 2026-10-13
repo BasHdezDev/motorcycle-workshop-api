@@ -18,3 +18,33 @@ resource "google_secret_manager_secret_iam_member" "runtime_database_url" {
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime.email}"
 }
+
+resource "google_service_account" "deployer" {
+  account_id   = "${var.app_name}-deployer"
+  display_name = "GitHub Actions deployer (Motorcycle Workshop V3)"
+
+  depends_on = [google_project_service.apis]
+}
+
+# Deploy Cloud Run services and run the migration job.
+resource "google_project_iam_member" "deployer_run_developer" {
+  project = var.project_id
+  role    = "roles/run.developer"
+  member  = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+# Push images, only to this repository.
+resource "google_artifact_registry_repository_iam_member" "deployer_writer" {
+  project    = var.project_id
+  location   = var.region
+  repository = google_artifact_registry_repository.api.repository_id
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${google_service_account.deployer.email}"
+}
+
+# Allows deploying Cloud Run revisions that run as the runtime account.
+resource "google_service_account_iam_member" "deployer_acts_as_runtime" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.deployer.email}"
+}
