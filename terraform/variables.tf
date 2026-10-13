@@ -26,3 +26,15 @@ variable "db_deletion_protection" {
   type        = bool
   default     = false
 }
+
+variable "db_name" {
+  description = "Name of the application database inside the Cloud SQL instance."
+  type        = string
+  default     = "motorcycle_workshop"
+}
+
+variable "db_user" {
+  description = "Application database user."
+  type        = string
+  default     = "workshop_user"
+}
