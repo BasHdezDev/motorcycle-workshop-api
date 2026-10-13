@@ -11,3 +11,22 @@ resource "google_iam_workload_identity_pool" "github" {
 
   depends_on = [google_project_service.apis]
 }
+
+resource "google_iam_workload_identity_pool_provider" "github" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+  display_name                       = "GitHub OIDC"
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.repository" = "assertion.repository"
+    "attribute.ref"        = "assertion.ref"
+  }
+
+  # Only tokens issued for this exact repository are accepted.
+  attribute_condition = "assertion.repository == \"${var.github_repository}\""
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
