@@ -30,3 +30,9 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     issuer_uri = "https://token.actions.githubusercontent.com"
   }
 }
+
+resource "google_service_account_iam_member" "deployer_workload_identity" {
+  service_account_id = google_service_account.deployer.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/${var.github_repository}"
+}
