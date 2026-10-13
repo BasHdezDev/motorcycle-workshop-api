@@ -37,3 +37,8 @@ output "cloud_run_url" {
   description = "Public URL of the API."
   value       = google_cloud_run_v2_service.api.uri
 }
+
+output "migration_job_name" {
+  description = "Cloud Run job that runs Prisma migrations."
+  value       = google_cloud_run_v2_job.migrate.name
+}
