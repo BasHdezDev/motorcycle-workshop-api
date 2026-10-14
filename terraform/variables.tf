@@ -43,3 +43,9 @@ variable "github_repository" {
   description = "GitHub repository allowed to deploy, in owner/name format."
   type        = string
 }
+
+variable "state_bucket" {
+  description = "Existing GCS bucket that stores the Terraform state (created manually)."
+  type        = string
+  default     = "motorcycle-workshop-v3-tfstate"
+}
