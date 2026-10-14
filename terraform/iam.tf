@@ -65,8 +65,10 @@ resource "google_project_iam_member" "deployer" {
 
 # The state bucket is created by hand (outside this state), so Terraform only
 # manages the access binding, never the bucket itself.
+# storage.admin (scoped to this one bucket) is required because Terraform must
+# also read the bucket's IAM policy to manage this very binding.
 resource "google_storage_bucket_iam_member" "deployer_state" {
   bucket = var.state_bucket
-  role   = "roles/storage.objectAdmin"
+  role   = "roles/storage.admin"
   member = "serviceAccount:${google_service_account.deployer.email}"
 }
