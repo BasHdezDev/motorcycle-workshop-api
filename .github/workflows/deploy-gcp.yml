@@ -89,10 +89,29 @@ jobs:
             --project "${{ vars.GCP_PROJECT_ID }}" \
             --region "${{ vars.GCP_REGION }}" \
             --wait
-            
+
       - name: Deploy to Cloud Run
         run: |
           gcloud run services update "${{ vars.GCP_CLOUD_RUN_SERVICE }}" \
             --project "${{ vars.GCP_PROJECT_ID }}" \
             --region "${{ vars.GCP_REGION }}" \
             --image "$IMAGE"
+
+      - name: Health check
+        run: |
+          URL=$(gcloud run services describe "${{ vars.GCP_CLOUD_RUN_SERVICE }}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --format="value(status.url)")
+          echo "Checking $URL/health"
+          for i in {1..6}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/health")
+            if [ "$STATUS" -eq 200 ]; then
+              echo "✅ Health check passed (HTTP $STATUS)"
+              exit 0
+            fi
+            echo "Attempt $i: got HTTP $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Health check failed after multiple attempts"
+          exit 1
