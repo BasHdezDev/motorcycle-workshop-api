@@ -17,7 +17,7 @@ resource "google_sql_user" "app" {
   instance = google_sql_database_instance.postgres.name
   password = random_password.db_password.result
 
-  # Postgres refuses to drop a database that has open connections. The database
-  # disappears with the instance, so Terraform does not drop it separately.
+  # Postgres cannot drop a role that owns objects (the tables created by the
+  # migrations). The role disappears with the instance.
   deletion_policy = "ABANDON"
 }
