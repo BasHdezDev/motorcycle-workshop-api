@@ -77,7 +77,7 @@ jobs:
         run: |
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
-          
+
       - name: Run database migrations
         run: |
           gcloud run jobs update "${{ vars.GCP_MIGRATION_JOB }}" \
@@ -89,3 +89,10 @@ jobs:
             --project "${{ vars.GCP_PROJECT_ID }}" \
             --region "${{ vars.GCP_REGION }}" \
             --wait
+            
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run services update "${{ vars.GCP_CLOUD_RUN_SERVICE }}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --image "$IMAGE"
