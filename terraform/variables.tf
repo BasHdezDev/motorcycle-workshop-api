@@ -49,3 +49,9 @@ variable "state_bucket" {
   type        = string
   default     = "motorcycle-workshop-v3-tfstate"
 }
+
+variable "allowed_branches" {
+  description = "Branches whose GitHub Actions runs may authenticate to Google Cloud."
+  type        = list(string)
+  default     = ["main", "v3-terraform-gcp"]
+}
