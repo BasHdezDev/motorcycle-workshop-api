@@ -38,11 +38,13 @@ jobs:
 
       - name: Build
         run: npm run build
-        
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
     needs: build
+    env:
+      IMAGE: ${{ vars.GCP_ARTIFACT_REGISTRY_URL }}/api:${{ github.sha }}
 
     permissions:
       contents: read
@@ -67,3 +69,23 @@ jobs:
             --project "${{ vars.GCP_PROJECT_ID }}" \
             --region "${{ vars.GCP_REGION }}" \
             --format="value(status.url)"
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+
+      - name: Build and push image
+        run: |
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          
+      - name: Run database migrations
+        run: |
+          gcloud run jobs update "${{ vars.GCP_MIGRATION_JOB }}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --image "$IMAGE"
+
+          gcloud run jobs execute "${{ vars.GCP_MIGRATION_JOB }}" \
+            --project "${{ vars.GCP_PROJECT_ID }}" \
+            --region "${{ vars.GCP_REGION }}" \
+            --wait
