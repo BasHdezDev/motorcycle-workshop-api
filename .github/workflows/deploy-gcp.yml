@@ -6,7 +6,13 @@ on:
   push:
     branches:
       - v3-terraform-gcp
+      
   workflow_dispatch:
+    inputs:
+      apply_infrastructure:
+        description: 'Apply Terraform changes (otherwise only plan)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
