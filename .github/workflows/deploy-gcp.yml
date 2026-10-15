@@ -1,11 +1,12 @@
 name: Deploy to Google Cloud
 
 on:
-  # Temporary: lets us test the pipeline from the V3 branch before merging.
-  # A workflow_dispatch trigger only shows up once the file is on the default branch.
   push:
     branches:
-      - v3-terraform-gcp
+      - main
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
   workflow_dispatch:
     inputs:
