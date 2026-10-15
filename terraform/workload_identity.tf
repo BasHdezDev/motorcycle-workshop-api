@@ -24,7 +24,10 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 
   # Only tokens issued for this exact repository are accepted.
-  attribute_condition = "assertion.repository == \"${var.github_repository}\""
+  attribute_condition = join(" && ", [
+    "assertion.repository == \"${var.github_repository}\"",
+    "assertion.ref in [${join(", ", formatlist("\"refs/heads/%s\"", var.allowed_branches))}]",
+  ])
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
