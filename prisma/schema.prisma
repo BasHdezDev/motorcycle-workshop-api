@@ -22,6 +22,13 @@ enum ServiceOrderStatus {
   CANCELLED
 }
 
+enum ServiceOrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
 model Driver {
   id             String  @id @default(uuid()) @db.Uuid
   firstName      String
@@ -65,6 +72,7 @@ model ServiceOrder {
   diagnosis          String?
   workPerformed      String?
   status             ServiceOrderStatus @default(RECEIVED)
+  priority           ServiceOrderPriority @default(NORMAL)
   repairCost         Decimal?           @db.Decimal(10, 2)
   paymentCompleted   Boolean            @default(false)
   paymentDate        DateTime?
