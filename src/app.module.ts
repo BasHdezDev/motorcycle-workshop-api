@@ -9,6 +9,7 @@ import { ServiceOrderModule } from './service-order/service-order.module';
 import { HealthModule } from './health/health.module';
 import { V2Module } from './v2/v2.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { V4Module } from './v4/v4.module';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -21,6 +22,7 @@ import { MetricsModule } from './metrics/metrics.module';
     HealthModule,
     V2Module,
     MetricsModule,
+    V4Module,
   ],
   controllers: [
     AppController,
