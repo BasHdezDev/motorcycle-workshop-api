@@ -15,6 +15,7 @@ import { ServiceOrderService } from './service-order/service-order.service';
 import { QueryServiceOrderDto } from './service-order/dto/query-service-order.dto/query-service-order.dto';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { registerVersionHeaders } from './common/version-headers';
 import * as packageJson from '../package.json';
 
 async function bootstrap() {
@@ -22,6 +23,8 @@ async function bootstrap() {
     AppModule,
     new FastifyAdapter(),
   );
+
+  registerVersionHeaders(app);
 
   app.useGlobalPipes(
     new ValidationPipe({

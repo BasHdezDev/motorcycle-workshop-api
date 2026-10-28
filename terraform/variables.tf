@@ -53,5 +53,5 @@ variable "state_bucket" {
 variable "allowed_branches" {
   description = "Branches whose GitHub Actions runs may authenticate to Google Cloud."
   type        = list(string)
-  default     = ["main", "v3-terraform-gcp"]
+  default     = ["main", "v3-terraform-gcp", "feature/canary-deployment"]
 }
