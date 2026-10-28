@@ -34,6 +34,9 @@ COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 8080
 
+ARG APP_TRACK=unknown
+ENV APP_TRACK=$APP_TRACK
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:$PORT/health || exit 1
 
