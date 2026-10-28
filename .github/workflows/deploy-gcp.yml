@@ -130,7 +130,7 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build -t "$IMAGE" .
+          docker build --build-arg APP_TRACK=stable -t "$IMAGE" .
           docker push "$IMAGE"
 
       - name: Run database migrations
