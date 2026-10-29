@@ -15,7 +15,10 @@ import { UpdateMotorcycleDto } from '../../motorcycle/dto/update-motorcycle.dto/
 import { QueryMotorcycleDto } from '../../motorcycle/dto/query-motorcycle.dto/query-motorcycle.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
 import { ApiKeyGuard } from '../common/api-key.guard';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('v2-motorcycles')
+@ApiSecurity('api-key')
 @Controller('api/v2/motorcycles')
 @UseGuards(ApiKeyGuard)
 export class MotorcycleV2Controller {

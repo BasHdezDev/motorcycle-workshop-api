@@ -15,7 +15,10 @@ import { UpdateDriverDto } from '../../driver/dto/update-driver.dto/update-drive
 import { QueryDriverDto } from '../../driver/dto/query-driver.dto/query-driver.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
 import { ApiKeyGuard } from '../common/api-key.guard';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('v2-drivers')
+@ApiSecurity('api-key')
 @Controller('api/v2/drivers')
 @UseGuards(ApiKeyGuard)
 export class DriverV2Controller {

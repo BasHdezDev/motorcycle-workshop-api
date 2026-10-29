@@ -3,12 +3,16 @@ import { ServiceOrderService } from '../../service-order/service-order.service';
 import { ChangeStatusDto } from '../../service-order/dto/change-status.dto/change-status.dto';
 import { ApiKeyGuard } from '../../v2/common/api-key.guard';
 import { ServiceOrderV4Service } from './service-order-v4.service';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 import {
     CreateServiceOrderV4Dto,
     QueryServiceOrderV4Dto,
     UpdateServiceOrderV4Dto,
 } from './dto/service-order-v4.dto';
 
+
+@ApiTags('v4-service-orders')
+@ApiSecurity('api-key')
 @Controller('api/v4/service-orders')
 @UseGuards(ApiKeyGuard)
 export class ServiceOrderV4Controller {

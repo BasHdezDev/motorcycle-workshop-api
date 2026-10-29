@@ -45,10 +45,18 @@ async function bootstrap() {
     .addTag('motorcycles')
     .addTag('service-orders')
     .addTag('health')
+    .addApiKey(
+      { type: 'apiKey', name: 'x-api-key', in: 'header' },
+      'api-key',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api', app, document), {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  };
 
   registerQueryRoutes(app);
 

@@ -16,7 +16,10 @@ import { ChangeStatusDto } from '../../service-order/dto/change-status.dto/chang
 import { QueryServiceOrderDto } from '../../service-order/dto/query-service-order.dto/query-service-order.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/pagination-query.dto';
 import { ApiKeyGuard } from '../common/api-key.guard';
+import { ApiSecurity, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('v2-service-orders')
+@ApiSecurity('api-key')
 @Controller('api/v2/service-orders')
 @UseGuards(ApiKeyGuard)
 export class ServiceOrderV2Controller {

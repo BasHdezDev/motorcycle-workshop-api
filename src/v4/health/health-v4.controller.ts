@@ -1,7 +1,9 @@
 import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getAppInfo } from '../../common/app-info';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('v4-health')
 @Controller('api/v4/health')
 export class HealthV4Controller {
     constructor(private readonly prisma: PrismaService) { }
