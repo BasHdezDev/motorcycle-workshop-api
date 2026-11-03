@@ -17,6 +17,7 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { registerVersionHeaders } from './common/version-headers';
 import * as packageJson from '../package.json';
+import { registerFaultInjection } from './common/fault-injection';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -25,6 +26,7 @@ async function bootstrap() {
   );
 
   registerVersionHeaders(app);
+  registerFaultInjection(app);
 
   app.useGlobalPipes(
     new ValidationPipe({
