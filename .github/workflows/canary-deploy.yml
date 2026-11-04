@@ -1,0 +1,141 @@
+name: Deploy Canary
+
+on:
+  push:
+    branches:
+      - feature/canary-deployment
+    paths:
+      - 'src/**'
+      - 'prisma/**'
+      - 'Dockerfile'
+      - 'package.json'
+      - '.github/workflows/canary-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      fault_error_rate:
+        description: 'Injected HTTP 500 rate from 0 to 1 (0 = healthy canary)'
+        default: '0'
+      fault_latency_ms:
+        description: 'Injected latency in ms (0 = healthy canary)'
+        default: '0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-gcp
+  cancel-in-progress: false
+
+jobs:
+  canary:
+    name: Build, deploy at 0% and smoke test
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      PROJECT: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      SERVICE: ${{ vars.GCP_CLOUD_RUN_SERVICE }}
+      MIGRATION_JOB: ${{ vars.GCP_MIGRATION_JOB }}
+      FAULT_ERROR_RATE: ${{ inputs.fault_error_rate || '0' }}
+      FAULT_LATENCY_MS: ${{ inputs.fault_latency_ms || '0' }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install, generate Prisma client and test
+        run: |
+          npm ci
+          npx prisma generate
+          npm test
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push canary image
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          IMAGE="${{ vars.GCP_ARTIFACT_REGISTRY_URL }}/api:${VERSION}-canary-${GITHUB_SHA::7}"
+          docker build --build-arg APP_TRACK=canary -t "$IMAGE" .
+          docker push "$IMAGE"
+          DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "$IMAGE")
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "DIGEST=$DIGEST" >> "$GITHUB_ENV"
+
+      - name: Run database migrations (expand only)
+        run: |
+          gcloud run jobs update "$MIGRATION_JOB" \
+            --project "$PROJECT" --region "$REGION" --image "$DIGEST"
+          gcloud run jobs execute "$MIGRATION_JOB" \
+            --project "$PROJECT" --region "$REGION" --wait
+
+      - name: Deploy canary revision with no public traffic
+        run: |
+          gcloud run services update "$SERVICE" \
+            --project "$PROJECT" --region "$REGION" \
+            --image "$DIGEST" \
+            --update-env-vars "FAULT_ERROR_RATE=${FAULT_ERROR_RATE},FAULT_LATENCY_MS=${FAULT_LATENCY_MS}" \
+            --no-traffic --tag canary
+
+      - name: Record deployment
+        run: |
+          set -euo pipefail
+          REVISION=$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --format="value(status.latestCreatedRevisionName)")
+          URL=$(gcloud run services describe "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --format="value(status.url)")
+          CANARY_URL="${URL/https:\/\//https://canary---}"
+          echo "URL=$URL" >> "$GITHUB_ENV"
+          echo "CANARY_URL=$CANARY_URL" >> "$GITHUB_ENV"
+          {
+            echo "### Canary deployed with 0% public traffic"
+            echo "- Revision: \`$REVISION\`"
+            echo "- App version: \`$VERSION\`"
+            echo "- Image digest: \`$DIGEST\`"
+            echo "- Fault injection: error rate \`$FAULT_ERROR_RATE\`, latency \`$FAULT_LATENCY_MS\` ms"
+            echo "- Internal URL: $CANARY_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Smoke test the canary and confirm public traffic is still stable
+        if: ${{ env.FAULT_ERROR_RATE == '0' && env.FAULT_LATENCY_MS == '0' }}
+        env:
+          API_KEY: ${{ secrets.API_KEY }}
+        run: |
+          fail=0
+          status() { curl -s -o /dev/null --retry 5 --retry-delay 5 -w "%{http_code}" "$@"; }
+          header() { curl -s -D - -o /dev/null --retry 5 --retry-delay 5 "$2" | tr -d '\r' \
+            | awk -F': ' -v h="$1" 'tolower($1)==tolower(h){print $2}'; }
+          check() {
+            if [ "$2" = "$3" ]; then echo "PASS $1"; else echo "FAIL $1 (expected $2, got $3)"; fail=1; fi
+          }
+
+          check "canary /health is 200"            200 "$(status "$CANARY_URL/health")"
+          check "canary reports track=canary"      canary "$(header X-App-Track "$CANARY_URL/health")"
+          check "canary /api/v4/health is 200"     200 "$(status "$CANARY_URL/api/v4/health")"
+          check "canary v4 orders with key"        200 "$(status -H "x-api-key: $API_KEY" "$CANARY_URL/api/v4/service-orders")"
+          check "canary v4 orders without key"     401 "$(status "$CANARY_URL/api/v4/service-orders")"
+          check "canary v2 drivers with key"       200 "$(status -H "x-api-key: $API_KEY" "$CANARY_URL/api/v2/drivers")"
+          check "public /health still stable"      stable "$(header X-App-Track "$URL/health")"
+          check "public has no /api/v4 yet"        404 "$(status "$URL/api/v4/health")"
+
+          exit $fail
