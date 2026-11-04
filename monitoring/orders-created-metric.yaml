@@ -1,0 +1,7 @@
+description: Service orders created (POST answered with 201), split by Cloud Run revision
+filter: >-
+  resource.type="cloud_run_revision"
+  AND logName="projects/motorcycle-workshop-v3/logs/run.googleapis.com%2Frequests"
+  AND httpRequest.requestMethod="POST"
+  AND httpRequest.requestUrl=~"/api/v[24]/service-orders$"
+  AND httpRequest.status=201

@@ -187,6 +187,36 @@
                         ]
                     }
                 }
+            },
+            {
+                "xPos": 0,
+                "yPos": 12,
+                "width": 12,
+                "height": 4,
+                "widget": {
+                    "title": "Business: service orders created per minute by revision",
+                    "xyChart": {
+                        "dataSets": [
+                            {
+                                "plotType": "STACKED_BAR",
+                                "legendTemplate": "${resource.labels.revision_name}",
+                                "timeSeriesQuery": {
+                                    "timeSeriesFilter": {
+                                        "filter": "metric.type=\"logging.googleapis.com/user/orders_created\" resource.type=\"cloud_run_revision\"",
+                                        "aggregation": {
+                                            "alignmentPeriod": "60s",
+                                            "perSeriesAligner": "ALIGN_SUM",
+                                            "crossSeriesReducer": "REDUCE_SUM",
+                                            "groupByFields": [
+                                                "resource.labels.revision_name"
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
             }
         ]
     }
