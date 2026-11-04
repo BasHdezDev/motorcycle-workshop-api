@@ -21,7 +21,10 @@ describe('ServiceOrderService', () => {
     beforeEach(async () => {
         jest.clearAllMocks();
         const module: TestingModule = await Test.createTestingModule({
-            providers: [ServiceOrderService, { provide: PrismaService, useValue: mockPrismaService }],
+            providers: [ServiceOrderService,
+                { provide: PrismaService, useValue: mockPrismaService },
+                { provide: 'PROM_METRIC_PARTNER_LOOKUPS_TOTAL', useValue: { inc: jest.fn() } },
+            ],
         }).compile();
         service = module.get<ServiceOrderService>(ServiceOrderService);
     });
