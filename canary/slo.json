@@ -1,0 +1,13 @@
+{
+  "description": "Canary SLO thresholds, evaluated on /api/v2/ traffic, which both revisions serve",
+  "path_filter": "/api/v2/",
+  "window_minutes": 5,
+  "max_log_entries": 3000,
+  "min_canary_requests": 50,
+  "min_stable_requests": 50,
+  "early_abort_5xx_count": 5,
+  "max_5xx_rate": 0.01,
+  "max_p95_ms": 500,
+  "max_p95_ratio_vs_stable": 1.5,
+  "latency_floor_ms": 200
+}
