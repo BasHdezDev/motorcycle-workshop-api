@@ -121,3 +121,80 @@ function Show-Distribution {
         }
     } | Format-Table -AutoSize
 }
+
+# Sends requests that fail on purpose so the dashboard has errors to show.
+# 4xx: missing key (401), unknown order (404), invalid body (400).
+# 5xx: a malformed id makes /api/v2 answer 500 (the known bug listed in the README).
+# Do NOT run it while a canary stage is being evaluated: the gate counts 5xx.
+function Send-Errors {
+    param(
+        [int]$Count = 60,
+        [ValidateSet("4xx", "5xx", "both")][string]$Kind = "both",
+        [switch]$Quiet
+    )
+
+    $auth = @{ "x-api-key" = $KEY }
+    $client4xx = @(
+        @{ Method = "GET";  Path = "/api/v2/service-orders";        Headers = @{} },
+        @{ Method = "GET";  Path = "/api/v2/service-orders/{guid}"; Headers = $auth },
+        @{ Method = "POST"; Path = "/api/v2/service-orders";        Headers = $auth; Body = "{}" }
+    )
+    $server5xx = @(
+        @{ Method = "GET"; Path = "/api/v2/service-orders/not-a-uuid"; Headers = $auth }
+    )
+    $pool = @(switch ($Kind) {
+        "4xx" { $client4xx }
+        "5xx" { $server5xx }
+        default { $client4xx + $server5xx }
+    })
+
+    $codes = 1..$Count | ForEach-Object {
+        $i = $_
+        $req = $pool[($i - 1) % $pool.Count]
+        $uri = $URL + ($req.Path -replace "\{guid\}", [guid]::NewGuid().ToString())
+        $params = @{ Uri = $uri; Method = $req.Method; Headers = $req.Headers; UseBasicParsing = $true }
+        if ($req.Body) { $params.Body = $req.Body; $params.ContentType = "application/json" }
+
+        $status = 0
+        try { $status = [int](Invoke-WebRequest @params).StatusCode }
+        catch { if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode } }
+
+        if (-not $Quiet) {
+            if ($status -ge 500) { Write-Host "5" -NoNewline -ForegroundColor Red }
+            elseif ($status -ge 400) { Write-Host "4" -NoNewline -ForegroundColor Yellow }
+            else { Write-Host "?" -NoNewline }
+        }
+        $status
+    }
+
+    if (-not $Quiet) {
+        Write-Host ""
+        $codes | Group-Object | Sort-Object Name |
+            ForEach-Object { [pscustomobject]@{ Status = $_.Name; Requests = $_.Count } } |
+            Format-Table -AutoSize
+    }
+}
+
+# Keeps a steady mix of healthy requests and errors flowing for a few minutes, so the
+# dashboard draws continuous lines. Always returns the traffic to 100 % stable at the end.
+function Start-DashboardTraffic {
+    param([int]$Minutes = 4, [int]$Canary = 25)
+
+    Set-Traffic -Canary $Canary
+    $end = (Get-Date).AddMinutes($Minutes)
+    $wave = 0
+    try {
+        while ((Get-Date) -lt $end) {
+            $wave++
+            Send-Load -Count 20
+            Send-Errors -Count 6 -Kind "4xx" -Quiet
+            if ($wave % 3 -eq 0) { Send-Errors -Count 3 -Kind "5xx" -Quiet }
+            $left = [math]::Max(0, ($end - (Get-Date)).TotalSeconds)
+            Write-Host ("`rWave {0} - {1:N0} s left   " -f $wave, $left) -NoNewline
+        }
+    }
+    finally {
+        Write-Host ""
+        Invoke-Rollback
+    }
+}
