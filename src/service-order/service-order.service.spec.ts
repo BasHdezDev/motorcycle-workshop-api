@@ -121,4 +121,52 @@ describe('ServiceOrderService', () => {
             await expect(service.cancel('order-1')).rejects.toThrow(BadRequestException);
         });
     });
+
+    describe('randomForInterop', () => {
+        const order = {
+            id: 'order-1', orderNumber: 'SO-001', status: 'RECEIVED',
+            problemDescription: 'Noise', motorcycleId: 'motorcycle-1',
+        };
+
+        afterEach(() => jest.restoreAllMocks());
+
+        it('should return the shared contract with string ids and a random offset', async () => {
+            jest.spyOn(Math, 'random').mockReturnValue(0.5);
+            mockPrismaService.serviceOrder.count.mockResolvedValue(4);
+            mockPrismaService.serviceOrder.findMany.mockResolvedValue([order]);
+
+            const result = await service.randomForInterop('cid-1');
+
+            expect(mockPrismaService.serviceOrder.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({ skip: 2, take: 1 }),
+            );
+            expect(result).toMatchObject({
+                source: 'workshop-orders-api',
+                kind: 'service-order',
+                id: 'order-1',
+                label: 'Orden SO-001',
+                attributes: {
+                    status: 'RECEIVED',
+                    problemDescription: 'Noise',
+                    motorcycleId: 'motorcycle-1',
+                },
+            });
+            expect(Number.isNaN(Date.parse(result!.retrievedAt))).toBe(false);
+        });
+
+        it('should return null without querying when there are no orders', async () => {
+            mockPrismaService.serviceOrder.count.mockResolvedValue(0);
+            mockPrismaService.serviceOrder.findMany.mockClear();
+
+            await expect(service.randomForInterop('cid-1')).resolves.toBeNull();
+            expect(mockPrismaService.serviceOrder.findMany).not.toHaveBeenCalled();
+        });
+
+        it('should return null when the page comes back empty', async () => {
+            mockPrismaService.serviceOrder.count.mockResolvedValue(3);
+            mockPrismaService.serviceOrder.findMany.mockResolvedValue([]);
+
+            await expect(service.randomForInterop('cid-1')).resolves.toBeNull();
+        });
+    });
 });
