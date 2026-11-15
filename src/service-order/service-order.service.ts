@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
 import { Prisma, ServiceOrderStatus } from '../../generated/prisma/client.js';
@@ -33,6 +33,8 @@ export class ServiceOrderService {
     constructor(private readonly prisma: PrismaService,
         @InjectMetric('partner_lookups_total') private readonly partnerLookups: Counter<string>,
     ) { }
+
+    private readonly interopLogger = new Logger('InteropOrders');
 
     private isValidPartnerRecord(r: any): boolean {
         return r && typeof r.source === 'string' && typeof r.id === 'string';
@@ -185,6 +187,37 @@ export class ServiceOrderService {
                 status: order.status,
                 problemDescription: order.problemDescription,
                 motorcycleId: order.motorcycleId,
+            },
+            retrievedAt: new Date().toISOString(),
+        };
+    }
+
+    async randomForInterop(correlationId: string) {
+        const total = await this.prisma.serviceOrder.count();
+        if (total === 0) {
+            this.interopLogger.warn(`no orders available correlationId=${correlationId}`);
+            return null;
+        }
+
+        const [order] = await this.prisma.serviceOrder.findMany({
+            skip: Math.floor(Math.random() * total),
+            take: 1,
+            orderBy: { orderNumber: 'asc' },
+        });
+        if (!order) return null;
+
+        this.interopLogger.log(
+            `random order served orderId=${order.id} correlationId=${correlationId}`,
+        );
+        return {
+            source: 'workshop-orders-api',
+            kind: 'service-order',
+            id: String(order.id),
+            label: `Orden ${order.orderNumber}`,
+            attributes: {
+                status: order.status,
+                problemDescription: order.problemDescription,
+                motorcycleId: String(order.motorcycleId),
             },
             retrievedAt: new Date().toISOString(),
         };
