@@ -6,7 +6,7 @@ import { HealthV2Controller } from './health/health-v2.controller';
 import { DriverV2Controller } from './driver/driver-v2.controller';
 import { MotorcycleV2Controller } from './motorcycle/motorcycle-v2.controller';
 import { ServiceOrderV2Controller } from './service-order/service-order-v2.controller';
-import { InteropOrdersController } from './interop/interop.orders.controller';
+import { InteropOrdersController } from './interop/interop-orders.controller';
 
 @Module({
     imports: [DriverModule, MotorcycleModule, ServiceOrderModule],
