@@ -2,11 +2,12 @@ import { Controller, Get, NotFoundException, Req, UseGuards } from '@nestjs/comm
 import { ApiExcludeController } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 import { ServiceOrderService } from '../../service-order/service-order.service';
-import { InteropKeyGuard } from './interop-key.guard';
+import { ApiKeyGuard } from '../common/api-key.guard';
+import { CorrelationIdGuard } from './correlation-id.guard';
 
 @ApiExcludeController()
 @Controller('api/v2/interop')
-@UseGuards(InteropKeyGuard)
+@UseGuards(CorrelationIdGuard, ApiKeyGuard)
 export class InteropOrdersController {
     constructor(private readonly serviceOrderService: ServiceOrderService) { }
 
