@@ -9,6 +9,7 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto/paginati
 import { PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
+import { dbQuery } from '../v2/interop/fault-db';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -193,17 +194,19 @@ export class ServiceOrderService {
     }
 
     async randomForInterop(correlationId: string) {
-        const total = await this.prisma.serviceOrder.count();
+        const total = await dbQuery(() => this.prisma.serviceOrder.count());
         if (total === 0) {
             this.interopLogger.warn(`no orders available correlationId=${correlationId}`);
             return null;
         }
 
-        const [order] = await this.prisma.serviceOrder.findMany({
-            skip: Math.floor(Math.random() * total),
-            take: 1,
-            orderBy: { orderNumber: 'asc' },
-        });
+        const [order] = await dbQuery(() =>
+            this.prisma.serviceOrder.findMany({
+                skip: Math.floor(Math.random() * total),
+                take: 1,
+                orderBy: { orderNumber: 'asc' },
+            }),
+        );
         if (!order) return null;
 
         this.interopLogger.log(
