@@ -1,0 +1,268 @@
+{
+  "chaoslib-version": "1.44.0",
+  "platform": "Windows-10-10.0.26300-SP0",
+  "node": "Bas",
+  "experiment": {
+    "version": "1.0.0",
+    "title": "The flow keeps the partner's data when the partner's database is unreachable",
+    "description": "The fault switch in the partner API (environment variable FAULT_DB) makes every call to its database hang for 10 s and fail, as a database that stopped answering would. k6 drives the fixed load profile through the coordinator and counts how many flow responses still carry the partner's record.",
+    "tags": [
+      "dependency-unavailable",
+      "database",
+      "fault-switch",
+      "partner"
+    ],
+    "configuration": {
+      "base_url": {
+        "type": "env",
+        "key": "BASE_URL"
+      },
+      "partner_service": {
+        "type": "env",
+        "key": "PARTNER_SERVICE"
+      },
+      "partner_region": {
+        "type": "env",
+        "key": "PARTNER_REGION"
+      },
+      "round": {
+        "type": "env",
+        "key": "ROUND",
+        "default": "x"
+      }
+    },
+    "extensions": [
+      {
+        "name": "chaos-card",
+        "owner": "partner, orders API on Google Cloud",
+        "steady_state": "Measured with chaos/load.js and no fault: see the steady-state runs in the report. Every flow response carries the partner's record.",
+        "hypothesis": "Given the load profile in chaos/slo.json, when the orders API's database is unreachable for 4 minutes, at least 99 % of GET /v2/items/:id still come back with partner.status = ok.",
+        "metric": {
+          "name": "share of GET /v2/items/:id with partner.status = ok",
+          "threshold": 0.99,
+          "instrument": "k6, chaos/load.js",
+          "observation_window": "the 195 s of the probe that runs while the fault is active"
+        },
+        "injection": "The partner's own fault switch: FAULT_DB=unreachable on its Cloud Run service, a new revision that makes each database call hang and fail.",
+        "blast_radius": "Only the orders API's revision and its own database calls. The database server itself is untouched, and so is our cloud: the coordinator only sees slower or failed answers.",
+        "duration": "about 4 minutes, from the switch to the rollback",
+        "abort_conditions": [
+          "more than 50 % of the k6 requests failing (abortOnFail in chaos/load.js)"
+        ],
+        "rollback": "The rollback removes FAULT_DB, which deploys a clean revision. It always runs, even on abort."
+      }
+    ],
+    "steady-state-hypothesis": {
+      "title": "Under the fixed load, 99 % of the flow carries the partner's record",
+      "probes": [
+        {
+          "type": "probe",
+          "name": "k6-fixed-load-profile",
+          "tolerance": 0,
+          "provider": {
+            "type": "process",
+            "path": "k6",
+            "arguments": [
+              "run",
+              "--quiet",
+              "-e",
+              "EXPERIMENT=b-partner-db",
+              "-e",
+              "BASE_URL=${base_url}",
+              "-e",
+              "ROUND=${round}",
+              "chaos/load.js"
+            ]
+          }
+        }
+      ]
+    },
+    "method": [
+      {
+        "type": "action",
+        "name": "make-the-partner-database-unreachable",
+        "provider": {
+          "type": "process",
+          "path": "gcloud",
+          "arguments": [
+            "run",
+            "services",
+            "update",
+            "${partner_service}",
+            "--region=${partner_region}",
+            "--update-env-vars=FAULT_DB=unreachable",
+            "--quiet"
+          ]
+        },
+        "pauses": {
+          "after": 15
+        }
+      }
+    ],
+    "rollbacks": [
+      {
+        "type": "action",
+        "name": "bring-the-partner-database-back",
+        "provider": {
+          "type": "process",
+          "path": "gcloud",
+          "arguments": [
+            "run",
+            "services",
+            "update",
+            "${partner_service}",
+            "--region=${partner_region}",
+            "--remove-env-vars=FAULT_DB",
+            "--quiet"
+          ]
+        }
+      }
+    ],
+    "dry": null
+  },
+  "start": "2026-11-16T21:55:45.822184+00:00",
+  "status": "completed",
+  "deviated": true,
+  "steady_states": {
+    "before": {
+      "steady_state_met": true,
+      "probes": [
+        {
+          "activity": {
+            "type": "probe",
+            "name": "k6-fixed-load-profile",
+            "tolerance": 0,
+            "provider": {
+              "type": "process",
+              "path": "k6",
+              "arguments": [
+                "run",
+                "--quiet",
+                "-e",
+                "EXPERIMENT=b-partner-db",
+                "-e",
+                "BASE_URL=${base_url}",
+                "-e",
+                "ROUND=${round}",
+                "chaos/load.js"
+              ]
+            }
+          },
+          "output": {
+            "status": 0,
+            "stdout": "b-partner-db round 0: 3449 requests, flow p95 139 ms, read p95 88 ms, partner ok 99.9 %, failed 0.0 %\n",
+            "stderr": "time=\"2026-11-16T16:59:00-05:00\" level=error msg=\"failed to handle the end-of-test summary\" error=\"Could not save some summary information:\\n\\t- could not open 'chaos/out/b-partner-db-r0-2026-11-16T21-59-00-923Z.json': open chaos/out/b-partner-db-r0-2026-11-16T21-59-00-923Z.json: The system cannot find the path specified.\"\n"
+          },
+          "start": "2026-11-16T21:55:45.825345+00:00",
+          "status": "succeeded",
+          "end": "2026-11-16T21:59:01.326572+00:00",
+          "duration": 195.501227,
+          "tolerance_met": true
+        }
+      ]
+    },
+    "after": {
+      "steady_state_met": false,
+      "probes": [
+        {
+          "activity": {
+            "type": "probe",
+            "name": "k6-fixed-load-profile",
+            "tolerance": 0,
+            "provider": {
+              "type": "process",
+              "path": "k6",
+              "arguments": [
+                "run",
+                "--quiet",
+                "-e",
+                "EXPERIMENT=b-partner-db",
+                "-e",
+                "BASE_URL=${base_url}",
+                "-e",
+                "ROUND=${round}",
+                "chaos/load.js"
+              ]
+            }
+          },
+          "output": {
+            "status": 99,
+            "stdout": "b-partner-db round 0: 3449 requests, flow p95 88 ms, read p95 94 ms, partner ok 0.0 %, failed 0.0 %\n",
+            "stderr": "time=\"2026-11-16T17:02:52-05:00\" level=error msg=\"failed to handle the end-of-test summary\" error=\"Could not save some summary information:\\n\\t- could not open 'chaos/out/b-partner-db-r0-2026-11-16T22-02-52-748Z.json': open chaos/out/b-partner-db-r0-2026-11-16T22-02-52-748Z.json: The system cannot find the path specified.\"\ntime=\"2026-11-16T17:02:53-05:00\" level=error msg=\"thresholds on metrics 'partner_ok' have been crossed\"\n"
+          },
+          "start": "2026-11-16T21:59:37.651159+00:00",
+          "status": "succeeded",
+          "end": "2026-11-16T22:02:53.111291+00:00",
+          "duration": 195.460132,
+          "tolerance_met": false
+        }
+      ]
+    },
+    "during": []
+  },
+  "run": [
+    {
+      "activity": {
+        "type": "action",
+        "name": "make-the-partner-database-unreachable",
+        "provider": {
+          "type": "process",
+          "path": "gcloud",
+          "arguments": [
+            "run",
+            "services",
+            "update",
+            "${partner_service}",
+            "--region=${partner_region}",
+            "--update-env-vars=FAULT_DB=unreachable",
+            "--quiet"
+          ]
+        },
+        "pauses": {
+          "after": 15
+        }
+      },
+      "output": {
+        "status": 0,
+        "stdout": "",
+        "stderr": "Deploying...\r\nCreating Revision.....................................................................................................................................................done\r\nRouting traffic.....done\r\nDone.\r\nService [workshop-v3-api] revision [workshop-v3-api-00006-rj6] has been deployed and is serving 100 percent of traffic.\r\nService URL: https://workshop-v3-api-748084106680.us-central1.run.app\r\n"
+      },
+      "start": "2026-11-16T21:59:01.331571+00:00",
+      "status": "succeeded",
+      "end": "2026-11-16T21:59:22.278823+00:00",
+      "duration": 20.947252
+    }
+  ],
+  "rollbacks": [
+    {
+      "activity": {
+        "type": "action",
+        "name": "bring-the-partner-database-back",
+        "provider": {
+          "type": "process",
+          "path": "gcloud",
+          "arguments": [
+            "run",
+            "services",
+            "update",
+            "${partner_service}",
+            "--region=${partner_region}",
+            "--remove-env-vars=FAULT_DB",
+            "--quiet"
+          ]
+        }
+      },
+      "output": {
+        "status": 0,
+        "stdout": "",
+        "stderr": "Deploying...\r\nCreating Revision.............................................................................................................................................................................................................done\r\nRouting traffic.....done\r\nDone.\r\nService [workshop-v3-api] revision [workshop-v3-api-00007-vgv] has been deployed and is serving 100 percent of traffic.\r\nService URL: https://workshop-v3-api-748084106680.us-central1.run.app\r\n"
+      },
+      "start": "2026-11-16T22:02:53.123105+00:00",
+      "status": "succeeded",
+      "end": "2026-11-16T22:03:23.165935+00:00",
+      "duration": 30.04283
+    }
+  ],
+  "end": "2026-11-16T22:03:23.167050+00:00",
+  "duration": 457.3448660373688
+}
