@@ -1,0 +1,87 @@
+# Fault (c), owner: the coordinator (AWS).
+#   chaos run chaos/experiments/c-db-pool.yaml
+# Needs BASE_URL, FAULT_TOKEN and ROUND in the environment, and k6.
+version: 1.0.0
+title: Plain reads keep their p95 while slow reports hold database connections
+description: >-
+  The fault switch in our own code makes each report (POST /v2/exports/items)
+  hold its database connection for 2 s. A stream of them competes with the
+  normal reads for the same connection pool, while k6 drives the fixed load
+  profile. If the reads' p95 crosses the threshold, the hypothesis is refuted.
+tags: [resource-exhaustion, connection-pool, fault-switch, coordinator]
+
+configuration:
+  base_url:
+    type: env
+    key: BASE_URL
+  round:
+    type: env
+    key: ROUND
+    default: "x"
+
+extensions:
+  - name: chaos-card
+    owner: coordinator, inventory-api on AWS
+    steady_state: >-
+      Measured with chaos/load.js and no fault: see the steady-state runs in the
+      report. Plain reads answer 100 % of the time and their p95 is well under 300 ms.
+    hypothesis: >-
+      Given the load profile in chaos/slo.json, when 6 slow reports per second
+      hold database connections for 4 minutes, the p95 of GET /items/:id stays
+      under 300 ms.
+    metric:
+      name: p95 of GET /items/:id
+      threshold_ms: 300
+      instrument: k6, chaos/load.js
+      observation_window: the 195 s of the probe that runs while the fault is active
+    injection: >-
+      Our own fault switch: the headers x-fault slow-db and x-fault-token make a
+      report run SELECT pg_sleep(2) on its pooled connection (chaos/reports.js).
+    blast_radius: >-
+      Only the requests that carry the switch's token are slowed. The pool they
+      exhaust is the API's own, 5 connections per replica: the database server,
+      other clients and the partner cloud are not touched.
+    duration: 4 minutes (the stream's own duration in chaos/slo.json)
+    abort_conditions:
+      - more than 50 % of the k6 requests failing (abortOnFail in chaos/load.js)
+    rollback: >-
+      The stream ends by itself after 4 minutes and every slow query after 2 s.
+      The rollback below stops the stream at once, and always runs, even on abort.
+
+steady-state-hypothesis:
+  title: Under the fixed load, plain reads keep a p95 under 300 ms
+  probes:
+    - type: probe
+      name: k6-fixed-load-profile
+      tolerance: 0
+      provider:
+        type: process
+        path: k6
+        arguments:
+          - run
+          - --quiet
+          - -e
+          - EXPERIMENT=c-db-pool
+          - -e
+          - BASE_URL=${base_url}
+          - -e
+          - ROUND=${round}
+          - chaos/load.js
+
+method:
+  - type: action
+    name: start-the-slow-report-stream
+    provider:
+      type: process
+      path: bash
+      arguments: [chaos/inject.sh, reports-start]
+    pauses:
+      after: 20
+
+rollbacks:
+  - type: action
+    name: stop-the-slow-report-stream
+    provider:
+      type: process
+      path: bash
+      arguments: [chaos/inject.sh, reports-stop]

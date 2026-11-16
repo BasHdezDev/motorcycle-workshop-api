@@ -1,0 +1,111 @@
+# Fault (a), owner: the coordinator (AWS). Runs in CI as the chaos gate:
+#   chaos run chaos/experiments/a-partner-latency.yaml
+# Needs BASE_URL, NODE_ID, PARTNER_HOST and ROUND in the environment, k6, and AWS credentials.
+version: 1.0.0
+title: The flow keeps its p95 when the partner API in GCP answers 2 s late
+description: >-
+  AWS's own latency document adds 2 s of network latency to the traffic from our
+  Kubernetes node to the partner API's host, while k6 drives the fixed load profile through the
+  coordinator. The steady state is checked before injecting, and again while the
+  fault is active: if the p95 of the flow crosses the threshold, the hypothesis
+  is refuted, the experiment is "deviated" and the pipeline fails.
+tags: [latency, dependency, aws-ssm, coordinator]
+
+configuration:
+  base_url:
+    type: env
+    key: BASE_URL
+  round:
+    type: env
+    key: ROUND
+    default: "x"
+
+extensions:
+  - name: chaos-card
+    owner: coordinator, inventory-api on AWS
+    steady_state: >-
+      Measured with chaos/load.js and no fault: see the steady-state runs in the
+      report. The flow answers 100 % of the time and its p95 is well under 500 ms.
+    hypothesis: >-
+      Given the load profile in chaos/slo.json, when 2 s of latency are injected
+      on the calls to the partner API for 5 minutes, the p95 of GET /v2/items/:id
+      stays under 500 ms.
+    metric:
+      name: p95 of GET /v2/items/:id
+      threshold_ms: 500
+      instrument: k6, chaos/load.js
+      observation_window: the 195 s of the probe that runs while the fault is active
+    injection: >-
+      The AWS document AWSFIS-Run-Network-Latency-Sources (the one AWS FIS runs, which
+      the account's free plan does not offer), sent to the node through Systems
+      Manager: tc adds 2000 ms on the default interface, towards the partner's host only.
+    blast_radius: >-
+      One EC2 node (tag Name=inventory-api-node), and only its traffic to the
+      partner's host. Reads, writes and the database are untouched; so is the
+      partner's own API, which never sees the delay.
+    duration: 5 minutes of injection at most (the document's DurationSeconds)
+    abort_conditions:
+      - CloudWatch alarm inventory-api-flow-errors in ALARM (the safeguard below)
+      - more than 50 % of the k6 requests failing (abortOnFail in chaos/load.js)
+    rollback: >-
+      The document removes the latency itself after 300 s, or once its command is
+      cancelled. The rollback below cancels it and clears the delay at once, and
+      always runs, even on abort.
+
+steady-state-hypothesis:
+  title: Under the fixed load, the flow's p95 stays under 500 ms
+  probes:
+    - type: probe
+      name: k6-fixed-load-profile
+      tolerance: 0
+      provider:
+        type: process
+        path: k6
+        arguments:
+          - run
+          - --quiet
+          - -e
+          - EXPERIMENT=a-partner-latency
+          - -e
+          - BASE_URL=${base_url}
+          - -e
+          - ROUND=${round}
+          - chaos/load.js
+
+method:
+  - type: action
+    name: inject-partner-latency
+    provider:
+      type: process
+      path: bash
+      arguments: [chaos/inject.sh, latency-start]
+    pauses:
+      # The SSM document installs its tools and applies the latency.
+      after: 45
+
+rollbacks:
+  - type: action
+    name: remove-the-partner-latency
+    provider:
+      type: process
+      path: bash
+      arguments: [chaos/inject.sh, latency-stop]
+
+controls:
+  - name: abort-if-the-flow-fails
+    provider:
+      type: python
+      module: chaosaddons.controls.safeguards
+      arguments:
+        probes:
+          - type: probe
+            name: flow-errors-alarm-is-quiet
+            frequency: 15
+            tolerance:
+              type: regex
+              target: stdout
+              pattern: "^0\\s*$"
+            provider:
+              type: process
+              path: bash
+              arguments: [chaos/inject.sh, alarm, inventory-api-flow-errors]

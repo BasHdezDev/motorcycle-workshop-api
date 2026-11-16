@@ -1,0 +1,21 @@
+{
+  "loadProfile": {
+    "rps": 20,
+    "rampUpSeconds": 30,
+    "plateauSeconds": 150,
+    "rampDownSeconds": 15
+  },
+  "experiments": {
+    "a-partner-latency": { "metric": "p95 of GET /v2/items/:id, ms", "threshold": 500 },
+    "b-partner-db": { "metric": "share of GET /v2/items/:id with partner.status = ok", "threshold": 0.99 },
+    "c-db-pool": { "metric": "p95 of GET /items/:id, ms", "threshold": 300 }
+  },
+  "abort": {
+    "flowErrorRate": 0.05,
+    "loadErrorRate": 0.5
+  },
+  "faultStream": {
+    "slowReportsPerSecond": 6,
+    "seconds": 240
+  }
+}

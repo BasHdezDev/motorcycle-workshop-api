@@ -1,0 +1,106 @@
+# Fault (b), owner: the partner (GCP). Run from a machine with gcloud signed in to the partner's project:
+#   PARTNER_SERVICE=... PARTNER_REGION=... BASE_URL=... ROUND=0 chaos run chaos/experiments/b-partner-db.yaml
+version: 1.0.0
+title: The flow keeps the partner's data when the partner's database is unreachable
+description: >-
+  The fault switch in the partner API (environment variable FAULT_DB) makes
+  every call to its database hang for 10 s and fail, as a database that stopped
+  answering would. k6 drives the fixed load profile through the coordinator and
+  counts how many flow responses still carry the partner's record.
+tags: [dependency-unavailable, database, fault-switch, partner]
+
+configuration:
+  base_url:
+    type: env
+    key: BASE_URL
+  partner_service:
+    type: env
+    key: PARTNER_SERVICE
+  partner_region:
+    type: env
+    key: PARTNER_REGION
+  round:
+    type: env
+    key: ROUND
+    default: "x"
+
+extensions:
+  - name: chaos-card
+    owner: partner, orders API on Google Cloud
+    steady_state: >-
+      Measured with chaos/load.js and no fault: see the steady-state runs in the
+      report. Every flow response carries the partner's record.
+    hypothesis: >-
+      Given the load profile in chaos/slo.json, when the orders API's database
+      is unreachable for 4 minutes, at least 99 % of GET /v2/items/:id still
+      come back with partner.status = ok.
+    metric:
+      name: share of GET /v2/items/:id with partner.status = ok
+      threshold: 0.99
+      instrument: k6, chaos/load.js
+      observation_window: the 195 s of the probe that runs while the fault is active
+    injection: >-
+      The partner's own fault switch: FAULT_DB=unreachable on its Cloud Run
+      service, a new revision that makes each database call hang and fail.
+    blast_radius: >-
+      Only the orders API's revision and its own database calls. The database
+      server itself is untouched, and so is our cloud: the coordinator only
+      sees slower or failed answers.
+    duration: about 4 minutes, from the switch to the rollback
+    abort_conditions:
+      - more than 50 % of the k6 requests failing (abortOnFail in chaos/load.js)
+    rollback: >-
+      The rollback removes FAULT_DB, which deploys a clean revision. It always
+      runs, even on abort.
+
+steady-state-hypothesis:
+  title: Under the fixed load, 99 % of the flow carries the partner's record
+  probes:
+    - type: probe
+      name: k6-fixed-load-profile
+      tolerance: 0
+      provider:
+        type: process
+        path: k6
+        arguments:
+          - run
+          - --quiet
+          - -e
+          - EXPERIMENT=b-partner-db
+          - -e
+          - BASE_URL=${base_url}
+          - -e
+          - ROUND=${round}
+          - chaos/load.js
+
+method:
+  - type: action
+    name: make-the-partner-database-unreachable
+    provider:
+      type: process
+      path: gcloud
+      arguments:
+        - run
+        - services
+        - update
+        - ${partner_service}
+        - --region=${partner_region}
+        - --update-env-vars=FAULT_DB=unreachable
+        - --quiet
+    pauses:
+      after: 15
+
+rollbacks:
+  - type: action
+    name: bring-the-partner-database-back
+    provider:
+      type: process
+      path: gcloud
+      arguments:
+        - run
+        - services
+        - update
+        - ${partner_service}
+        - --region=${partner_region}
+        - --remove-env-vars=FAULT_DB
+        - --quiet
