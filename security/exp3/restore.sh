@@ -17,7 +17,7 @@ fi
 
 if exclusion_present; then
   if gcloud logging sinks update _Default --project "${PROJECT}" \
-       --remove-exclusion="${EXCLUSION_NAME}" --quiet; then
+       --remove-exclusions="${EXCLUSION_NAME}" --quiet; then
     echo "exclusion removed"
   else
     echo "FAILED to remove the exclusion" >&2
