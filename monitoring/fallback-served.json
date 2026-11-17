@@ -1,0 +1,5 @@
+{
+  "name": "fallback_served",
+  "description": "Log lines fallback served from the orders API: the stale cache pattern acting",
+  "filter": "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"workshop-v3-api\" AND jsonPayload.message:\"fallback served\""
+}
