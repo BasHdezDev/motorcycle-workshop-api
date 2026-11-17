@@ -1,0 +1,22 @@
+{
+  "displayName": "exp3 - orders-api request logs absent (5 min)",
+  "combiner": "OR",
+  "enabled": true,
+  "conditions": [
+    {
+      "displayName": "No request logs counted for 5 minutes",
+      "conditionAbsent": {
+        "filter": "metric.type=\"logging.googleapis.com/user/orders_api_requests\" AND resource.type=\"cloud_run_revision\"",
+        "aggregations": [
+          { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_SUM", "crossSeriesReducer": "REDUCE_SUM" }
+        ],
+        "duration": "300s"
+      }
+    }
+  ],
+  "alertStrategy": { "autoClose": "1800s" },
+  "documentation": {
+    "content": "The orders API stopped producing countable request logs while an uptime check calls it every minute: the telemetry is blind or the service is down. Run security/exp3/restore.sh if it was not you.",
+    "mimeType": "text/markdown"
+  }
+}

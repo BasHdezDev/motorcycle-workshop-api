@@ -1,0 +1,10 @@
+{
+  "displayName": "orders-api health (every minute)",
+  "monitoredResource": {
+    "type": "uptime_url",
+    "labels": { "project_id": "motorcycle-workshop-v3", "host": "workshop-v3-api-748084106680.us-central1.run.app" }
+  },
+  "httpCheck": { "path": "/health", "port": 443, "useSsl": true, "validateSsl": true, "requestMethod": "GET" },
+  "period": "60s",
+  "timeout": "10s"
+}

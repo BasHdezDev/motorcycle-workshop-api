@@ -1,0 +1,18 @@
+{
+  "displayName": "exp3 - observability tampering (audit log)",
+  "combiner": "OR",
+  "enabled": true,
+  "conditions": [
+    {
+      "displayName": "Alert policy disabled or log exclusion added",
+      "conditionMatchedLog": {
+        "filter": "logName=\"projects/motorcycle-workshop-v3/logs/cloudaudit.googleapis.com%2Factivity\" AND ((protoPayload.methodName=\"google.monitoring.v3.AlertPolicyService.UpdateAlertPolicy\" AND protoPayload.request.alertPolicy.enabled=false) OR (protoPayload.methodName=\"google.logging.v2.ConfigServiceV2.UpdateSink\" AND protoPayload.request.updateMask=\"exclusions\" AND protoPayload.request.sink.exclusions.name:*))"
+      }
+    }
+  ],
+  "alertStrategy": { "notificationRateLimit": { "period": "300s" }, "autoClose": "1800s" },
+  "documentation": {
+    "content": "Someone disabled an alert policy or added a log exclusion in this project (ATT&CK T1562.008). Run security/exp3/restore.sh if it was not you.",
+    "mimeType": "text/markdown"
+  }
+}
