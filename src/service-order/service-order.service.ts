@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateServiceOrderDto } from './dto/create-service-order.dto/create-service-order.dto';
 import { Prisma, ServiceOrderStatus } from '../../generated/prisma/client.js';
@@ -10,6 +10,7 @@ import { PaginatedResult } from 'src/common/interfaces/paginated-result.interfac
 import { Counter } from 'prom-client';
 import { InjectMetric } from '@willsoto/nestjs-prometheus';
 import { dbQuery } from '../v2/interop/fault-db';
+import { withTimeout } from '../v2/interop/with-timeout';
 
 // Statuses that count as "active" for the one-active-order-per-motorcycle rule .
 // This is per Bussiness Rule 1: "A motorcycle can have only one active service order at a time."
@@ -29,11 +30,42 @@ const ALLOWED_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
     CANCELLED: [],
 };
 
+const INTEROP_DB_TIMEOUT_MS = 150;
+const INTEROP_CACHE_SIZE = 50;
+
+type InteropRecord = {
+    source: string;
+    kind: string;
+    id: string;
+    label: string;
+    attributes: Record<string, string | number | boolean>;
+    retrievedAt: string;
+};
+
 @Injectable()
-export class ServiceOrderService {
+export class ServiceOrderService implements OnModuleInit {
     constructor(private readonly prisma: PrismaService,
         @InjectMetric('partner_lookups_total') private readonly partnerLookups: Counter<string>,
     ) { }
+    async onModuleInit() {
+        // Warm the fallback cache at boot. It goes through Prisma directly on purpose:
+        // a new revision starts before its first request. A failure here never stops the app.
+        try {
+            const orders = await withTimeout(
+                this.prisma.serviceOrder.findMany({
+                    take: INTEROP_CACHE_SIZE,
+                    orderBy: { checkInDate: 'desc' },
+                }),
+                2000,
+            );
+            orders.reverse().forEach((o) => this.remember(this.toInteropRecord(o)));
+            this.interopLogger.log(`fallback cache warmed with ${orders.length} orders`);
+        } catch (error) {
+            this.interopLogger.warn(`fallback cache warm-up skipped: ${(error as Error).message}`);
+        }
+    }
+
+     private readonly recentInterop = new Map<string, InteropRecord>();
 
     private readonly interopLogger = new Logger('InteropOrders');
 
@@ -186,20 +218,61 @@ export class ServiceOrderService {
             label: `Orden ${order.orderNumber}`,
             attributes: {
                 status: order.status,
-                problemDescription: order.problemDescription,
+                problemDescription: order.problemDescription ?? '',
                 motorcycleId: order.motorcycleId,
             },
             retrievedAt: new Date().toISOString(),
         };
     }
 
-    async randomForInterop(correlationId: string) {
+    private serveFromCache(correlationId: string, error: unknown): InteropRecord {
+        const reason = (error as Error).message;
+        const cached = [...this.recentInterop.values()];
+        if (cached.length === 0) {
+            this.interopLogger.error(
+                `no fallback available correlationId=${correlationId} reason=${reason}`,
+            );
+            throw new ServiceUnavailableException('Orders database unavailable and no cached order');
+        }
+        const record = cached[Math.floor(Math.random() * cached.length)];
+        this.interopLogger.warn(
+            `fallback served orderId=${record.id} correlationId=${correlationId} reason=${reason}`,
+        );
+        return { ...record, attributes: { ...record.attributes, stale: true } };
+    }
+
+    private remember(record: InteropRecord) {
+        this.recentInterop.delete(record.id);
+        this.recentInterop.set(record.id, record);
+        if (this.recentInterop.size > INTEROP_CACHE_SIZE) {
+            this.recentInterop.delete(this.recentInterop.keys().next().value as string);
+        }
+    }
+
+    private toInteropRecord(order: {
+        id: string; orderNumber: string; status: string;
+        problemDescription: string | null; motorcycleId: string;
+    }): InteropRecord {
+        return {
+            source: 'workshop-orders-api',
+            kind: 'service-order',
+            id: String(order.id),
+            label: `Orden ${order.orderNumber}`,
+            attributes: {
+                status: order.status,
+                problemDescription: order.problemDescription ?? '',
+                motorcycleId: String(order.motorcycleId),
+            },
+            retrievedAt: new Date().toISOString(),
+        };
+    }
+
+    private async readRandomOrder(correlationId: string): Promise<InteropRecord | null> {
         const total = await dbQuery(() => this.prisma.serviceOrder.count());
         if (total === 0) {
             this.interopLogger.warn(`no orders available correlationId=${correlationId}`);
             return null;
         }
-
         const [order] = await dbQuery(() =>
             this.prisma.serviceOrder.findMany({
                 skip: Math.floor(Math.random() * total),
@@ -212,18 +285,20 @@ export class ServiceOrderService {
         this.interopLogger.log(
             `random order served orderId=${order.id} correlationId=${correlationId}`,
         );
-        return {
-            source: 'workshop-orders-api',
-            kind: 'service-order',
-            id: String(order.id),
-            label: `Orden ${order.orderNumber}`,
-            attributes: {
-                status: order.status,
-                problemDescription: order.problemDescription,
-                motorcycleId: String(order.motorcycleId),
-            },
-            retrievedAt: new Date().toISOString(),
-        };
+        return this.toInteropRecord(order);
+    }
+
+    async randomForInterop(correlationId: string): Promise<InteropRecord | null> {
+        try {
+            const record = await withTimeout(
+                this.readRandomOrder(correlationId),
+                INTEROP_DB_TIMEOUT_MS,
+            );
+            if (record) this.remember(record);
+            return record;
+        } catch (error) {
+            return this.serveFromCache(correlationId, error);
+        }
     }
 
     async findOneWithPartner(id: string) {

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { ServiceOrderService } from './service-order.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -167,6 +167,79 @@ describe('ServiceOrderService', () => {
             mockPrismaService.serviceOrder.findMany.mockResolvedValue([]);
 
             await expect(service.randomForInterop('cid-1')).resolves.toBeNull();
+        });
+    });
+
+    describe('interop resilience', () => {
+        const order = {
+            id: 'order-1', orderNumber: 'SO-001', status: 'RECEIVED',
+            problemDescription: 'Noise', motorcycleId: 'motorcycle-1',
+        };
+
+        afterEach(() => {
+            delete process.env.FAULT_DB;
+            jest.useRealTimers();
+            jest.restoreAllMocks();
+        });
+
+        async function warmCache() {
+            mockPrismaService.serviceOrder.count.mockResolvedValue(1);
+            mockPrismaService.serviceOrder.findMany.mockResolvedValue([order]);
+            return service.randomForInterop('warm');
+        }
+
+        it('serves a stale cached order within the 150 ms budget when the database hangs', async () => {
+            const fresh = await warmCache();
+            expect(fresh!.attributes).not.toHaveProperty('stale');
+
+            jest.useFakeTimers();
+            process.env.FAULT_DB = 'unreachable';
+            const pending = service.randomForInterop('cid-1');
+            await jest.advanceTimersByTimeAsync(150);
+
+            await expect(pending).resolves.toMatchObject({
+                source: 'workshop-orders-api', kind: 'service-order', id: 'order-1',
+                attributes: { status: 'RECEIVED', stale: true },
+            });
+            await jest.advanceTimersByTimeAsync(10_000); // the hung query dies quietly
+        });
+
+        it('falls back on a database error too', async () => {
+            await warmCache();
+            mockPrismaService.serviceOrder.count.mockRejectedValue(new Error('connection refused'));
+
+            await expect(service.randomForInterop('cid-1')).resolves.toMatchObject({
+                id: 'order-1', attributes: { stale: true },
+            });
+        });
+
+        it('answers 503 at once when the database fails and the cache is empty', async () => {
+            jest.useFakeTimers();
+            process.env.FAULT_DB = 'unreachable';
+            const pending = service.randomForInterop('cid-1');
+            const assertion = expect(pending).rejects.toThrow(ServiceUnavailableException);
+
+            await jest.advanceTimersByTimeAsync(150);
+            await assertion;
+            await jest.advanceTimersByTimeAsync(10_000);
+        });
+
+        it('keeps only the last 50 orders', async () => {
+            for (let i = 0; i < 60; i++) {
+                mockPrismaService.serviceOrder.count.mockResolvedValue(1);
+                mockPrismaService.serviceOrder.findMany.mockResolvedValue([{ ...order, id: `order-${i}` }]);
+                await service.randomForInterop('cid');
+            }
+            expect((service as any).recentInterop.size).toBe(50);
+        });
+
+        it('warms the cache at boot and never fails the boot', async () => {
+            mockPrismaService.serviceOrder.findMany.mockResolvedValue([order]);
+            await service.onModuleInit();
+            expect((service as any).recentInterop.size).toBe(1);
+
+            mockPrismaService.serviceOrder.findMany.mockRejectedValue(new Error('down'));
+            await expect(service.onModuleInit()).resolves.toBeUndefined();
         });
     });
 });
