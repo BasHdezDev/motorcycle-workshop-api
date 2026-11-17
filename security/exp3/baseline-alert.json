@@ -1,0 +1,24 @@
+{
+  "displayName": "orders-api 5xx errors",
+  "combiner": "OR",
+  "enabled": true,
+  "conditions": [
+    {
+      "displayName": "5xx responses on workshop-v3-api",
+      "conditionThreshold": {
+        "filter": "metric.type=\"run.googleapis.com/request_count\" AND resource.type=\"cloud_run_revision\" AND resource.label.\"service_name\"=\"workshop-v3-api\" AND metric.label.\"response_code_class\"=\"5xx\"",
+        "aggregations": [
+          { "alignmentPeriod": "60s", "perSeriesAligner": "ALIGN_RATE", "crossSeriesReducer": "REDUCE_SUM" }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0.05,
+        "duration": "60s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "documentation": {
+    "content": "Alert on server errors of the orders API. Experiment 3 turns it off as the adverse condition.",
+    "mimeType": "text/markdown"
+  }
+}
