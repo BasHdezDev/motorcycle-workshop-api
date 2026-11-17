@@ -30,4 +30,12 @@ describe('CorrelationIdGuard', () => {
         guard.canActivate(c);
         expect(req.correlationId).toMatch(/^[0-9a-f-]{36}$/);
     });
+
+    it('reuses the id the request context already set', () => {
+        const { c, req, reply } = ctx({ 'x-correlation-id': 'from-header' });
+        req.correlationId = 'from-context';
+        guard.canActivate(c);
+        expect(req.correlationId).toBe('from-context');
+        expect(reply.header).toHaveBeenCalledWith('x-correlation-id', 'from-context');
+    });
 });

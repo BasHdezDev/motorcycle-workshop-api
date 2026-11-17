@@ -18,15 +18,21 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { registerVersionHeaders } from './common/version-headers';
 import * as packageJson from '../package.json';
 import { registerFaultInjection } from './common/fault-injection';
+import { JsonLogger } from './common/json-logger';
+import { registerRequestContext } from './common/request-context';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter(),
+    {
+      logger: new JsonLogger(),
+    },
   );
 
   registerVersionHeaders(app);
   registerFaultInjection(app);
+  registerRequestContext(app);
 
   app.useGlobalPipes(
     new ValidationPipe({

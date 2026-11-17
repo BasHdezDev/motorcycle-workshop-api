@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import { resolveCorrelationId } from '../../common/request-context';
 
 const SAFE_ID = /^[\w.-]{1,128}$/;
 
@@ -16,9 +16,8 @@ export class CorrelationIdGuard implements CanActivate {
 
         const incoming = req.headers['x-correlation-id'];
         const correlationId =
-            typeof incoming === 'string' && SAFE_ID.test(incoming)
-                ? incoming
-                : randomUUID();
+            req.correlationId ?? resolveCorrelationId(req.headers['x-correlation-id']);
+        req.correlationId = correlationId;
         req.correlationId = correlationId;
         reply.header('x-correlation-id', correlationId);
 
