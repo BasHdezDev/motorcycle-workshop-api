@@ -168,6 +168,20 @@ describe('ServiceOrderService', () => {
 
             await expect(service.randomForInterop('cid-1')).resolves.toBeNull();
         });
+
+        it('should log the problem description as JSON-escaped text', async () => {
+            const spy = jest.spyOn((service as any).interopLogger, 'log').mockImplementation();
+            mockPrismaService.serviceOrder.count.mockResolvedValue(1);
+            mockPrismaService.serviceOrder.findMany.mockResolvedValue([
+                { ...order, problemDescription: 'line1\nline2 "q"' },
+            ]);
+
+            await service.randomForInterop('cid-1');
+
+            expect(spy).toHaveBeenCalledWith(
+                expect.stringContaining('problemDescription="line1\\nline2 \\"q\\""'),
+            );
+        });
     });
 
     describe('interop resilience', () => {

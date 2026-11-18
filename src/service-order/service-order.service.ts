@@ -283,7 +283,8 @@ export class ServiceOrderService implements OnModuleInit {
         if (!order) return null;
 
         this.interopLogger.log(
-            `random order served orderId=${order.id} correlationId=${correlationId}`,
+            `random order served orderId=${order.id} correlationId=${correlationId} ` +
+            `problemDescription=${JSON.stringify(String(order.problemDescription ?? '').slice(0, 400))}`,
         );
         return this.toInteropRecord(order);
     }
