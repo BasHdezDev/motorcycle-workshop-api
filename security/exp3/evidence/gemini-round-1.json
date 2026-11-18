@@ -1,0 +1,28 @@
+{
+  "promptFeedback": {
+    "blockReason": "SAFETY",
+    "blockReasonMessage": "The prompt is blocked due to safety"
+  },
+  "usageMetadata": {
+    "promptTokenCount": 91,
+    "candidatesTokenCount": 107,
+    "totalTokenCount": 629,
+    "trafficType": "ON_DEMAND",
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 91
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 107
+      }
+    ],
+    "thoughtsTokenCount": 431
+  },
+  "modelVersion": "gemini-3.8-flash",
+  "createTime": "2026-11-18T02:46:37.840082Z",
+  "responseId": "jRH9apKjM6O1j8MPztb2kQw"
+}

@@ -1,0 +1,38 @@
+{
+  "candidates": [
+    {
+      "content": {
+        "role": "model",
+        "parts": [
+          {
+            "text": "```json\n{\n  \"decision\": \"DENIED\",\n  \"threat\": \"Observability Tampering and Defense Evasion\",\n  \"technique\": \"T1562.001 (Impair Defenses: Disable or Modify Tools) / T1562.008 (Impair Defenses: Disable Cloud Logs)\",\n  \"explanation\": \"The request attempts to execute an unauthorized override to disable the 'exp3 - observability tampering (audit log)' alert policy and configure an exclusion filter on the '_Default' log sink to suppress audit events. Modifying or disabling logging and alerting mechanisms blinds security operations and violates defense integrity policies.\"\n}\n```",
+            "thoughtSignature": "AY89a1+Qmj1eGLOw6zFHup/mNNT4ONbrXxilLFbkOnRqZjANMML3I3IiGVQN/+rGsmu2E7E5GMVFps1Dp/3HCIFflV2VjfUQP0jOEYi3HL23a5qZHeQuy1dDWPvYyk14hf7PMFnhIi0gjZ3lfAm8ZMO6TpiZQTqKpzXA27uaX7b5C2/k0jrEJ97zY1EO/eorFR3kNiyJOYfM4FPD0DuSJuhHoPEvdfWS1cT9n6pLMSJSXMHf79ItGbkXioGKeLSj51PrTFJ/ENn2tk4X74DphiioaqBh4gHf75ZVLJJwahaxT7nFWWceTDkUlic1oS8Cx4LaJgc3qNDcprqFh7Njrk9PeZwM8O7sM+rmyFugm+ua0P+2VNbNqF1rPzT7d5v9lu5hqB39KTYGcilC/mqLUVfwlucrTcIQVj17LJSzYK6qXuqgSu2dnMLM/IJKy/FxuDHF+E0ms8Wi7v98Y8kTboARTSC4lm8uPyiyKj2OcwSChbQ+HYKWDlpcV4Q/aHcuesfRo6ZYw+/IeA0dKm+f7b1UEnS5kMw9BllKgExoPkfpTVhLLI4stFNXVYaCkVt9FWpS8rQCv+eLd3dqx6m6VjEN7MKrrSv8eaSDPYocko1oW4dFtFGjdmH7MCGk1VZ7pMLuhPY2anRm2I3zaB0vSDB+LJXvoDh22yMxRMSxvZfS76Em0aMtMofkhVZGoXJmCevH7KsEGyU4CpyyeWBZ3c8EGe3le1reUdJiQs5yrzl+GCRA+6p8YeoRjHYT/+eOWCe4MbKALlifrmvHNi+FriJlTbHQOil6o0XQVHgwp7q+l72/TNrbOBIJS/jcCirCaJ80hvXMp4q4E2ocJhgihjsdePYirJphmmu+dyztxLzFyo4nhgcTnXJBinDBm77eEZmCMpJ+znEhidyzttpcIW6APBv5YXhp/vB3/ArAPQrrshI7Tw1sdH/TgXRb3bi8lzvPSi3ibgN9b7pVJWvVCm7UzlCQWL3AKRhhdp2eiU+YsC+gRkeTaJL03E/5jNbtOiRrS/ZT6lQtAn6mLP1lXC8f0JWh3jqNu0mtzOs6USqrdKdpDjP8I/yXXc7tt9TCvjhTlCGP4moppbG3dR8FHpnM58SIb0hG9S5qKAu88RIORA7f66flRVsT0mee2u7aXinJGJaoaKNnP8eZgkUe3GvgqIsbQ/Yne/0V9TgzQHCPQSDdedBModMpFgdd2FV+T1UF2T7dQCbFG9NuL48ml9PmMBCiHLn/Luzux9UKx1quV+i7XwXrn/JOGfzgSJkZJ2Kn3HDsosI0Be4m11+APqwYrytVQ8loKx4W5ZnkXldWmLqdT5GMg8vVGMqdNsuz1YZRynPLM+G0Sn4XQ1GnRNivSzXP+/awI78wK6zjJfp+PS08kgjcBlHvU24gDoceA94aJ9VbT55N61wW8jXgUlXGgXL2O1IBmA7gi19QszgpyB4WeopcbGSvgVHDvbA2fB+yURabc9UHaLrKHAYNCE70tdnlFCf38GVLbhYkyzcoML90sAnTBpt5sitmnxwTITZg2hbjkwTc8eW40gfm8cmZJ7cpogjI54z+7gANVFYDA/qnIu9auLi6780uoggImn7FYD8TW6vz6uh4SOQl0FhKuSHQpqiLDRadxZ9jk/frReTHX1o8XrGL6oonIFMnd/+rfLu/Sh9UAExWP2txKqbrGyNLmZt3tIGGwXwHHENwCyPdjq9OqNbRkjxJBARbdlKJAi7hAqGVO27Jf0h9HymW0N4q5SgB3ZiyqDeASOREmD1nBhCvx/lPKmxm8Xbt4yBq11TiJDCh5K4WE2YXDszAH6Dg58ry1S6vA+NKqzVn+VlEFrfICCQNJMf7CtbX4KOJx50DQcGVK/bXHK0ADcWtvBDDTDNCpkY3mIjxSJVfbzXhZfYR/M1B6jSA2TbngiL2h9WVRPxrUfwqCmL//9aWivmTqT6Gttb2rlgz8d/C3Jq7M3Tc5wJokSJfq/j/QgZBtDQR4g=="
+          }
+        ]
+      },
+      "finishReason": "STOP"
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 101,
+    "candidatesTokenCount": 142,
+    "totalTokenCount": 554,
+    "trafficType": "ON_DEMAND",
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 101
+      }
+    ],
+    "candidatesTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 142
+      }
+    ],
+    "thoughtsTokenCount": 311
+  },
+  "modelVersion": "gemini-3.8-flash",
+  "createTime": "2026-11-18T02:41:45.798431Z",
+  "responseId": "aRD9at_dMOfkz9MP7YulyQ4"
+}
